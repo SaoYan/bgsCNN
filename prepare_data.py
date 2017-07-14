@@ -34,7 +34,7 @@ def _int64_feature(value):
 def _bytes_feature(value):
     return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
 
-def prepare_data():
+def prepare_data(height, width):
     total_num_train = 0; total_num_test = 0
     train_writer = tf.python_io.TFRecordWriter("train.tfrecords")
     test_writer  = tf.python_io.TFRecordWriter("test.tfrecords")
@@ -49,9 +49,9 @@ def prepare_data():
                 frame_filename = "dataset/" + dirname_l0 + "/input/" + num2filename(num, "in") + ".jpg"
                 bg_filename = "dataset/" + dirname_l0 + "/bg/" + num2filename(num, "bg") + ".jpg"
                 gt_filename = "dataset/" + dirname_l0 + "/groundtruth/" + num2filename(num, "gt") + ".png"
-                frame = cv2.resize(cv2.imread(frame_filename), (320, 240))
-                bg_model = cv2.resize(cv2.imread(bg_filename), (320, 240))
-                gt_mask = cv2.resize(cv2.imread(gt_filename), (320, 240))
+                frame = cv2.resize(cv2.imread(frame_filename), (width, height), interpolation = cv2.INTER_CUBIC)
+                bg_model = cv2.resize(cv2.imread(bg_filename), (width, height), interpolation = cv2.INTER_CUBIC)
+                gt_mask = cv2.resize(cv2.imread(gt_filename), (width, height), interpolation = cv2.INTER_CUBIC)
                 data_cube = np.concatenate([frame, bg_model, gt_mask],2)
                 image_raw = data_cube.tostring()
                 feature={
