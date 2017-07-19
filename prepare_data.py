@@ -57,10 +57,7 @@ def prepare_data(height, width):
                 data_cube = np.concatenate([frame, bg_model, gt],2)
                 image_raw = data_cube.tostring()
                 feature={
-                    'image_raw': _bytes_feature(image_raw),
-                    'height': _int64_feature(data_cube.shape[0]),
-                    'width':  _int64_feature(data_cube.shape[1]),
-                    'depth':  _int64_feature(data_cube.shape[2]),
+                    'image_raw': _bytes_feature(image_raw)
                 }
                 example = tf.train.Example(features=tf.train.Features(feature=feature))
                 if (dirname_l0 != "winterStreet") & (dirname_l0 != "highway"):
