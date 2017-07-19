@@ -47,8 +47,7 @@ def prepare_data(height, width):
             num = begin
             roi_filename = "dataset/" + dirname_l0 + "/ROI.bmp"
             roi_img = cv2.resize(cv2.imread(roi_filename), (width, height), interpolation = cv2.INTER_CUBIC)
-            roi = np.ones([height, width, 1])
-            roi[:,:,0] = roi_img[:,:,0]
+            idx = (roi_img == 0)
             while num <= end:
                 frame_filename = "dataset/" + dirname_l0 + "/input/" + num2filename(num, "in") + ".jpg"
                 bg_filename = "dataset/" + dirname_l0 + "/bg/" + num2filename(num, "bg") + ".jpg"
@@ -56,19 +55,22 @@ def prepare_data(height, width):
                 frame = cv2.resize(cv2.imread(frame_filename), (width, height), interpolation = cv2.INTER_CUBIC)
                 bg_model = cv2.resize(cv2.imread(bg_filename), (width, height), interpolation = cv2.INTER_CUBIC)
                 gt_mask = cv2.resize(cv2.imread(gt_filename), (width, height), interpolation = cv2.INTER_CUBIC)
-                gt = np.ones([height, width, 1])
-                gt[:,:,0] = gt_mask[:,:,0]
-                data_cube = np.concatenate([frame, bg_model, roi, gt],2)
-                image_raw = data_cube.tostring()
-                feature={ 'image_raw': _bytes_feature(image_raw) }
-                example = tf.train.Example(features=tf.train.Features(feature=feature))
-                if (dirname_l0 != "winterStreet") & (dirname_l0 != "highway"):
-                    train_writer.write(example.SerializeToString())
-                    total_num_train = total_num_train + 1
-                else:
-                    test_writer.write(example.SerializeToString())
-                    total_num_test = total_num_test + 1
-                print("add data for frame # " + str(num))
+                if not (gt_mask == 0).all():
+                    frame[idx] = 0
+                    bg_model[idx] = 0
+                    gt = np.ones([height, width, 1])
+                    gt[:,:,0] = gt_mask[:,:,0]
+                    data_cube = np.concatenate([frame, bg_model, gt], 2)
+                    image_raw = data_cube.tostring()
+                    feature={ 'image_raw': _bytes_feature(image_raw) }
+                    example = tf.train.Example(features=tf.train.Features(feature=feature))
+                    if (dirname_l0 != "winterStreet") & (dirname_l0 != "highway"):
+                        train_writer.write(example.SerializeToString())
+                        total_num_train = total_num_train + 1
+                    else:
+                        test_writer.write(example.SerializeToString())
+                        total_num_test = total_num_test + 1
+                    print("add data for frame # " + str(num))
                 num = num + 1
             print ("finish dealing with " + dirname_l0 + "\n")
     print ("total # of training samples: " + str(total_num_train))

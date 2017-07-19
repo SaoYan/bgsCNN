@@ -1,5 +1,3 @@
-#! /usr/bin/python
-
 # from generate_bg import generate_bg
 from prepare_data import prepare_data
 
