@@ -52,7 +52,9 @@ def prepare_data(height, width):
                 frame = cv2.resize(cv2.imread(frame_filename), (width, height), interpolation = cv2.INTER_CUBIC)
                 bg_model = cv2.resize(cv2.imread(bg_filename), (width, height), interpolation = cv2.INTER_CUBIC)
                 gt_mask = cv2.resize(cv2.imread(gt_filename), (width, height), interpolation = cv2.INTER_CUBIC)
-                data_cube = np.concatenate([frame, bg_model, gt_mask],2)
+                gt = np.ones([height, width, 1])
+                gt[:,:,0] = gt_mask[:,:,0]
+                data_cube = np.concatenate([frame, bg_model, gt],2)
                 image_raw = data_cube.tostring()
                 feature={
                     'image_raw': _bytes_feature(image_raw),
@@ -63,14 +65,12 @@ def prepare_data(height, width):
                 example = tf.train.Example(features=tf.train.Features(feature=feature))
                 if (dirname_l0 != "winterStreet") & (dirname_l0 != "highway"):
                     train_writer.write(example.SerializeToString())
-                    print("add data for frame # " + str(num))
-                    num = num + 1
                     total_num_train = total_num_train + 1
                 else:
                     test_writer.write(example.SerializeToString())
-                    print("add data for frame # " + str(num))
-                    num = num + 1
                     total_num_test = total_num_test + 1
+                print("add data for frame # " + str(num))
+                num = num + 1
             print ("finish dealing with " + dirname_l0 + "\n")
     print ("total # of training samples: " + str(total_num_train))
     print ("total # of test samples: " + str(total_num_test))
