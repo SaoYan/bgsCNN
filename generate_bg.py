@@ -3,7 +3,6 @@ import cv2
 import libbgs
 import os
 import os.path
-from prepare_data import *
 
 def walklevel(some_dir, level):
     some_dir = some_dir.rstrip(os.path.sep)
