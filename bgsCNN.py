@@ -8,7 +8,7 @@ from tensorflow.contrib.slim.nets import resnet_v2
 from tensorflow.contrib import slim
 
 # generate_bg()
-prepare_data(321, 321)
+# prepare_data(321, 321)
 
 def weight(shape, name):
 	initial = tf.random_normal(shape, mean=0.0, stddev=0.1, dtype=tf.float32)
@@ -40,9 +40,9 @@ def build_img_pair(img_batch):
     inputs = np.ones([img_batch.shape[0], img_batch.shape[1], img_batch.shape[2], 7], dtype = np.float32)
     outputs_gt = np.ones([img_batch.shape[0], img_batch.shape[1], img_batch.shape[2], 1], dtype = np.float32)
     for i in range(num):
-        input_cast = image[i,:,:,0:7].astype(dtype = np.float32)
+        input_cast = image[i,:,:,0:6].astype(dtype = np.float32)
         input_norm = cv2.normalize(input_cast, 0., 1., cv2.NORM_MINMAX)
-        gt = image[i,:,:,7]
+        gt = image[i,:,:,6]
         idx = ((gt != 0) & (gt != 255))
         gt[idx] = 0
         gt_norm = cv2.normalize(gt, 0, 1, cv2.NORM_MINMAX)
@@ -62,11 +62,11 @@ if __name__ == '__main__':
     tf.app.flags.DEFINE_integer("image_depth", 8, "depth of inputs")
 
     with tf.name_scope("input_data"):
-        frame_and_bg = tf.placeholder(tf.float32, [None, FLAGS.image_height, FLAGS.image_height, 7])
+        frame_and_bg = tf.placeholder(tf.float32, [None, FLAGS.image_height, FLAGS.image_height, 6])
         fg_gt = tf.placeholder(tf.float32, [None, FLAGS.image_height, FLAGS.image_height, 1])
 
     with tf.name_scope("pre_conv"):
-        W_pre = weight([1, 1, 7, 3], "weights")
+        W_pre = weight([1, 1, 6, 3], "weights")
         pre_conv = conv2d(frame_and_bg, W_pre)
         tf.summary.histogram("W_pre_conv", W_pre)
 
@@ -115,20 +115,20 @@ if __name__ == '__main__':
         optimizer = tf.train.AdamOptimizer()
         train_step = optimizer.minimize(cross_entropy)
 
-    train_file = "tfrecords_321X321/train.tfrecords"
-    test_file  = "tfrecords_321X321/test.tfrecords"
+    train_file = "train.tfrecords"
+    test_file  = "test.tfrecords"
     saver = tf.train.Saver()
     img_size = [FLAGS.image_height, FLAGS.image_width, FLAGS.image_depth]
     train_batch = tf.train.shuffle_batch([read_tfrecord(train_file, img_size)],
                 batch_size = FLAGS.batch_size,
-                capacity = 1000 + 3 * FLAGS.batch_size,
-                num_threads = 2,
-                min_after_dequeue = 1000)
+                capacity = 50000,
+                num_threads = 4,
+                min_after_dequeue = 10000)
     test_batch = tf.train.shuffle_batch([read_tfrecord(test_file, img_size)],
                 batch_size = FLAGS.test_size,
-                capacity = 1000 + 3 * FLAGS.test_size,
-                num_threads = 2,
-                min_after_dequeue = 1000)
+                capacity = 50000,
+                num_threads = 4,
+                min_after_dequeue = 10000)
     init = tf.initialize_all_variables()
     init_fn = slim.assign_from_checkpoint_fn("CNN_models/resnet_v2_152.ckpt", slim.get_model_variables('resnet_v2'))
     with tf.Session() as sess:
