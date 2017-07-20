@@ -1,2 +1,2 @@
-total # of training samples: 69506
-total # of test samples: 2117
+total # of training samples: 57858
+total # of test samples: 1231

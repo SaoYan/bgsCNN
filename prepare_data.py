@@ -28,9 +28,6 @@ def num2filename(num, prefix):
     else:
         return prefix + str(num)
 
-def _int64_feature(value):
-    return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
-
 def _bytes_feature(value):
     return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
 
@@ -60,11 +57,11 @@ def prepare_data(height, width):
                     bg_model[idx] = 0
                     gt = np.ones([height, width, 1])
                     gt[:,:,0] = gt_mask[:,:,0]
-                    data_cube = np.concatenate([frame, bg_model, gt], 2)
+                    data_cube = np.uint8(np.concatenate([frame, bg_model, gt], 2))
                     image_raw = data_cube.tostring()
                     feature={ 'image_raw': _bytes_feature(image_raw) }
                     example = tf.train.Example(features=tf.train.Features(feature=feature))
-                    if (dirname_l0 != "winterStreet") & (dirname_l0 != "highway"):
+                    if dirname_l0 != "highway":
                         train_writer.write(example.SerializeToString())
                         total_num_train = total_num_train + 1
                     else:
@@ -75,3 +72,4 @@ def prepare_data(height, width):
             print ("finish dealing with " + dirname_l0 + "\n")
     print ("total # of training samples: " + str(total_num_train))
     print ("total # of test samples: " + str(total_num_test))
+    return total_num_train, total_num_test
