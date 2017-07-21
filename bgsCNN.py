@@ -1,5 +1,5 @@
-from generate_bg import generate_bg
-from prepare_data import prepare_data
+# from generate_bg import generate_bg
+# from prepare_data import prepare_data
 
 import cv2
 import numpy as np
@@ -8,7 +8,7 @@ from tensorflow.contrib.slim.nets import resnet_v2
 from tensorflow.contrib import slim
 
 # generate_bg()
-total_num_train, total_num_test = prepare_data(321, 321)
+# total_num_train, total_num_test = prepare_data(321, 321)
 
 def weight(shape, name):
 	initial = tf.random_normal(shape, mean=0.0, stddev=0.1, dtype=tf.float32)
@@ -40,22 +40,22 @@ def build_img_pair(img_batch):
     inputs = np.ones([img_batch.shape[0], img_batch.shape[1], img_batch.shape[2], 6], dtype = np.float32)
     outputs_gt = np.ones([img_batch.shape[0], img_batch.shape[1], img_batch.shape[2], 1], dtype = np.float32)
     for i in range(num):
-        input_cast = image[i,:,:,0:6].astype(dtype = np.float32)
+        input_cast = img_batch[i,:,:,0:6].astype(dtype = np.float32)
         input_norm = cv2.normalize(input_cast, 0., 1., cv2.NORM_MINMAX)
-        gt = image[i,:,:,6]
+        gt = img_batch[i,:,:,6]
         idx = ((gt != 0) & (gt != 255))
         gt[idx] = 0
         gt_norm = cv2.normalize(gt, 0, 1, cv2.NORM_MINMAX)
         gt_cast = gt_norm.astype(dtype = np.float32)
         inputs[i,:,:,:] = input_norm
-        outputs_gt[i,:,:,:] = gt_cast
+        outputs_gt[i,:,:,0] = gt_cast
     return inputs, outputs_gt
 
 
 if __name__ == '__main__':
     FLAGS = tf.app.flags.FLAGS
     tf.app.flags.DEFINE_integer("batch_size", 100, "size of training batch")
-    tf.app.flags.DEFINE_integer("test_size", total_num_test, "# of test samples")
+    tf.app.flags.DEFINE_integer("test_size", 1231, "# of test samples")
     tf.app.flags.DEFINE_integer("max_iteration", 10000, "maximum # of training steps")
     tf.app.flags.DEFINE_integer("image_height", 321, "height of inputs")
     tf.app.flags.DEFINE_integer("image_width", 321, "width of inputs")
@@ -70,7 +70,7 @@ if __name__ == '__main__':
         pre_conv = conv2d(frame_and_bg, W_pre)
         tf.summary.histogram("W_pre_conv", W_pre)
 
-    with tf.name_scope("resnet_v2_152"):
+    with tf.name_scope("resnet_v2"):
     	with slim.arg_scope(resnet_v2.resnet_arg_scope()):
     	    net, end_points = resnet_v2.resnet_v2_152(
     	        pre_conv,
@@ -121,12 +121,12 @@ if __name__ == '__main__':
     img_size = [FLAGS.image_height, FLAGS.image_width, FLAGS.image_depth]
     train_batch = tf.train.shuffle_batch([read_tfrecord(train_file, img_size)],
                 batch_size = FLAGS.batch_size,
-                capacity = 50000,
+                capacity = 20000,
                 num_threads = 4,
                 min_after_dequeue = 10000)
     test_batch = tf.train.shuffle_batch([read_tfrecord(test_file, img_size)],
                 batch_size = FLAGS.test_size,
-                capacity = 50000,
+                capacity = 20000,
                 num_threads = 4,
                 min_after_dequeue = 10000)
     init = tf.initialize_all_variables()
@@ -154,7 +154,7 @@ if __name__ == '__main__':
                 train_loss  = cross_entropy.eval({frame_and_bg:inputs_train, fg_gt:outputs_gt_train})
                 test_loss   = cross_entropy.eval({frame_and_bg:inputs_test, fg_gt:outputs_gt_test})
                 print("iter step %d trainning batch loss %f"%(iter, train_loss))
-                print("iter step %d test loss %f"%(iter, test_loss))
+                print("iter step %d test loss %f\n"%(iter, test_loss))
             if iter%100 == 0:
                 saver.save(sess, "logs/model.ckpt", global_step=iter)
             train_step.run({frame_and_bg:inputs_train, fg_gt:outputs_gt_train})
