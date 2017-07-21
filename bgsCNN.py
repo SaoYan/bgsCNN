@@ -1,5 +1,5 @@
 # from generate_bg import generate_bg
-# from prepare_data import prepare_data
+from prepare_data import prepare_data
 
 import cv2
 import numpy as np

@@ -52,7 +52,7 @@ def prepare_data(height, width):
                 frame = cv2.resize(cv2.imread(frame_filename), (width, height), interpolation = cv2.INTER_CUBIC)
                 bg_model = cv2.resize(cv2.imread(bg_filename), (width, height), interpolation = cv2.INTER_CUBIC)
                 gt_mask = cv2.resize(cv2.imread(gt_filename), (width, height), interpolation = cv2.INTER_CUBIC)
-                if not (gt_mask == 0).all():
+                if (gt_mask == 255).any():
                     frame[idx] = 0
                     bg_model[idx] = 0
                     gt = np.ones([height, width, 1])
