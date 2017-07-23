@@ -1,5 +1,5 @@
 # from generate_bg import generate_bg
-from prepare_data import prepare_data
+# from prepare_data import prepare_data
 
 import cv2
 import numpy as np
@@ -41,20 +41,25 @@ def build_img_pair(img_batch):
     outputs_gt = np.ones([img_batch.shape[0], img_batch.shape[1], img_batch.shape[2], 1], dtype = np.float32)
     for i in range(num):
         input_cast = img_batch[i,:,:,0:6].astype(dtype = np.float32)
-        input_norm = cv2.normalize(input_cast, 0., 1., cv2.NORM_MINMAX)
+        input_min = np.amin(input_cast)
+        input_max = np.amax(input_cast)
+        input_norm = (input_cast - input_min) / (input_max - input_min)
+
         gt = img_batch[i,:,:,6]
         idx = ((gt != 0) & (gt != 255))
         gt[idx] = 0
-        gt_norm = cv2.normalize(gt, 0, 1, cv2.NORM_MINMAX)
-        gt_cast = gt_norm.astype(dtype = np.float32)
-        inputs[i,:,:,:] = input_norm
-        outputs_gt[i,:,:,0] = gt_cast
-    return inputs, outputs_gt
+        gt_cast = gt.astype(dtype = np.float32)
+        gt_min = np.amin(gt_cast)
+        gt_max = np.amax(gt_cast)
+        gt_norm = (gt_cast - gt_min) / (gt_max - gt_min)
 
+        inputs[i,:,:,:] = input_norm
+        outputs_gt[i,:,:,0] = gt_norm
+    return inputs, outputs_gt
 
 if __name__ == '__main__':
     FLAGS = tf.app.flags.FLAGS
-    tf.app.flags.DEFINE_integer("batch_size", 100, "size of training batch")
+    tf.app.flags.DEFINE_integer("batch_size", 20, "size of training batch")
     tf.app.flags.DEFINE_integer("test_size", 1231, "# of test samples")
     tf.app.flags.DEFINE_integer("max_iteration", 10000, "maximum # of training steps")
     tf.app.flags.DEFINE_integer("image_height", 321, "height of inputs")
@@ -72,7 +77,7 @@ if __name__ == '__main__':
 
     with tf.name_scope("resnet_v2"):
     	with slim.arg_scope(resnet_v2.resnet_arg_scope()):
-    	    net, end_points = resnet_v2.resnet_v2_152(
+    	    net, end_points = resnet_v2.resnet_v2_50(
     	        pre_conv,
     	        num_classes = None,
     	        is_training = True,
@@ -104,11 +109,11 @@ if __name__ == '__main__':
 
     with tf.name_scope("conv_2"):
         W_conv2 = weight([1, 1, 4, 1], "weights")
-        conv_2 = tf.nn.sigmoid(conv2d(conv_1, W_conv2))
+        conv_2 = conv2d(conv_1, W_conv2)
         tf.summary.histogram("W_conv2", W_conv2)
 
     with tf.name_scope("evaluation"):
-        cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels = fg_gt, logits = conv_2))
+        cross_entropy = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels = fg_gt, logits = conv_2))
         tf.summary.scalar("loss", cross_entropy)
 
     with tf.name_scope('training_op'):
@@ -121,16 +126,16 @@ if __name__ == '__main__':
     img_size = [FLAGS.image_height, FLAGS.image_width, FLAGS.image_depth]
     train_batch = tf.train.shuffle_batch([read_tfrecord(train_file, img_size)],
                 batch_size = FLAGS.batch_size,
-                capacity = 20000,
-                num_threads = 4,
-                min_after_dequeue = 10000)
-    test_batch = tf.train.shuffle_batch([read_tfrecord(test_file, img_size)],
-                batch_size = FLAGS.test_size,
-                capacity = 20000,
-                num_threads = 4,
-                min_after_dequeue = 10000)
-    init = tf.initialize_all_variables()
-    init_fn = slim.assign_from_checkpoint_fn("CNN_models/resnet_v2_152.ckpt", slim.get_model_variables('resnet_v2'))
+                capacity = 500,
+                num_threads = 2,
+                min_after_dequeue = 300)
+    # test_batch = tf.train.shuffle_batch([read_tfrecord(test_file, img_size)],
+    #             batch_size = FLAGS.test_size,
+    #             capacity = 20000,
+    #             num_threads = 2,
+    #             min_after_dequeue = 10000)
+    init = tf.global_variables_initializer()
+    init_fn = slim.assign_from_checkpoint_fn("CNN_models/resnet_v2_50.ckpt", slim.get_model_variables('resnet_v2'))
     with tf.Session() as sess:
         init_fn(sess)
         sess.run(init)
@@ -140,21 +145,21 @@ if __name__ == '__main__':
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
-        inputs_test, outputs_gt_test = build_img_pair(sess.run(test_batch))
+        # inputs_test, outputs_gt_test = build_img_pair(sess.run(test_batch))
         for iter in range(FLAGS.max_iteration):
             inputs_train, outputs_gt_train = build_img_pair(sess.run(train_batch))
             if iter%10 == 0:
                 summary_train = sess.run(summary, {frame_and_bg:inputs_train, fg_gt:outputs_gt_train})
                 train_writer.add_summary(summary_train, iter)
                 train_writer.flush()
-                summary_test = sess.run(summary, {frame_and_bg:inputs_test, fg_gt:outputs_gt_test})
-                test_writer.add_summary(summary_test, iter)
-                test_writer.flush()
+                # summary_test = sess.run(summary, {frame_and_bg:inputs_test, fg_gt:outputs_gt_test})
+                # test_writer.add_summary(summary_test, iter)
+                # test_writer.flush()
             if iter%100 == 0:
                 train_loss  = cross_entropy.eval({frame_and_bg:inputs_train, fg_gt:outputs_gt_train})
-                test_loss   = cross_entropy.eval({frame_and_bg:inputs_test, fg_gt:outputs_gt_test})
+                # test_loss   = cross_entropy.eval({frame_and_bg:inputs_test, fg_gt:outputs_gt_test})
                 print("iter step %d trainning batch loss %f"%(iter, train_loss))
-                print("iter step %d test loss %f\n"%(iter, test_loss))
+                # print("iter step %d test loss %f\n"%(iter, test_loss))
             if iter%100 == 0:
                 saver.save(sess, "logs/model.ckpt", global_step=iter)
             train_step.run({frame_and_bg:inputs_train, fg_gt:outputs_gt_train})
@@ -163,5 +168,5 @@ if __name__ == '__main__':
         coord.join(threads)
 
         saver.save(sess, "logs/model.ckpt")
-        test_loss = MSE_loss.eval({frame_and_bg:inputs_test, fg_gt:outputs_gt_test})
-        print("final test loss %f" % test_loss)
+        # test_loss = MSE_loss.eval({frame_and_bg:inputs_test, fg_gt:outputs_gt_test})
+        # print("final test loss %f" % test_loss)

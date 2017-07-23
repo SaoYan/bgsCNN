@@ -70,6 +70,7 @@ def prepare_data(height, width):
                     print("add data for frame # " + str(num))
                 num = num + 1
             print ("finish dealing with " + dirname_l0 + "\n")
+
     print ("total # of training samples: " + str(total_num_train))
     print ("total # of test samples: " + str(total_num_test))
     return total_num_train, total_num_test
