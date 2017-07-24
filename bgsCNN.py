@@ -1,6 +1,7 @@
 # from generate_bg import generate_bg
 # from prepare_data import prepare_data
 
+import time
 import cv2
 import numpy as np
 import tensorflow as tf
@@ -11,7 +12,7 @@ from tensorflow.contrib import slim
 # total_num_train, total_num_test = prepare_data(321, 321)
 
 def weight(shape, name):
-	initial = tf.random_normal(shape, mean=0.0, stddev=0.1, dtype=tf.float32)
+	initial = tf.truncated_normal(shape, mean=0.0, stddev=0.1, dtype=tf.float32)
 	return tf.Variable(initial,name=name)
 
 def bias(shape, name):
@@ -59,9 +60,8 @@ def build_img_pair(img_batch):
 
 if __name__ == '__main__':
     FLAGS = tf.app.flags.FLAGS
-    tf.app.flags.DEFINE_integer("batch_size", 20, "size of training batch")
-    tf.app.flags.DEFINE_integer("test_size", 1231, "# of test samples")
-    tf.app.flags.DEFINE_integer("max_iteration", 10000, "maximum # of training steps")
+    tf.app.flags.DEFINE_integer("batch_size", 30, "size of training batch")
+    tf.app.flags.DEFINE_integer("max_iteration", 5000, "maximum # of training steps")
     tf.app.flags.DEFINE_integer("image_height", 321, "height of inputs")
     tf.app.flags.DEFINE_integer("image_width", 321, "width of inputs")
     tf.app.flags.DEFINE_integer("image_depth", 7, "depth of inputs")
@@ -85,30 +85,30 @@ if __name__ == '__main__':
                 output_stride = 16)
 
     with tf.name_scope("deconv_1"):
-        W_deconv1 = weight([1, 1, 1024, 2048], "weights")
+        W_deconv1 = weight([1, 1, 16, 2048], "weights")
         deconv_1 = deconv2d(net, W_deconv1,
-            output_shape = [FLAGS.batch_size, 81, 81, 1024], strides = [1, 4, 4, 1])
+            output_shape = [FLAGS.batch_size, 81, 81, 16], strides = [1, 4, 4, 1])
         tf.summary.histogram("W_deconv1", W_deconv1)
 
     with tf.name_scope("deconv_2"):
-        W_deconv2 = weight([5, 5, 64, 1024], "weights")
+        W_deconv2 = weight([5, 5, 8, 16], "weights")
         deconv_2 = deconv2d(deconv_1, W_deconv2,
-            output_shape = [FLAGS.batch_size, 165, 165, 64], strides = [1, 2, 2, 1])
+            output_shape = [FLAGS.batch_size, 165, 165, 8], strides = [1, 2, 2, 1])
         tf.summary.histogram("W_deconv2", W_deconv2)
 
     with tf.name_scope("deconv_3"):
-        W_deconv3 = weight([5, 5, 16, 64], "weights")
+        W_deconv3 = weight([5, 5, 4, 8], "weights")
         deconv_3 = deconv2d(deconv_2, W_deconv3,
-            output_shape = [FLAGS.batch_size, 333, 333, 16], strides = [1, 2, 2, 1])
+            output_shape = [FLAGS.batch_size, 333, 333, 4], strides = [1, 2, 2, 1])
         tf.summary.histogram("W_deconv3", W_deconv3)
 
     with tf.name_scope("conv_1"):
-        W_conv1 = weight([13, 13, 16, 4], "weights")
+        W_conv1 = weight([7, 7, 4, 1], "weights")
         conv_1 = conv2d(deconv_3, W_conv1)
         tf.summary.histogram("W_conv1", W_conv1)
 
     with tf.name_scope("conv_2"):
-        W_conv2 = weight([1, 1, 4, 1], "weights")
+        W_conv2 = weight([7, 7, 1, 1], "weights")
         conv_2 = conv2d(conv_1, W_conv2)
         tf.summary.histogram("W_conv2", W_conv2)
 
@@ -117,7 +117,8 @@ if __name__ == '__main__':
         tf.summary.scalar("loss", cross_entropy)
 
     with tf.name_scope('training_op'):
-        optimizer = tf.train.AdamOptimizer()
+        optimizer = tf.train.AdamOptimizer(learning_rate=0.0001)
+        # optimizer = tf.train.MomentumOptimizer(learning_rate = 0.01, momentum = 0.9)
         train_step = optimizer.minimize(cross_entropy)
 
     train_file = "train.tfrecords"
@@ -129,11 +130,11 @@ if __name__ == '__main__':
                 capacity = 500,
                 num_threads = 2,
                 min_after_dequeue = 300)
-    # test_batch = tf.train.shuffle_batch([read_tfrecord(test_file, img_size)],
-    #             batch_size = FLAGS.test_size,
-    #             capacity = 20000,
-    #             num_threads = 2,
-    #             min_after_dequeue = 10000)
+    test_batch = tf.train.shuffle_batch([read_tfrecord(test_file, img_size)],
+                batch_size = FLAGS.batch_size,
+                capacity = 500,
+                num_threads = 2,
+                min_after_dequeue = 300)
     init = tf.global_variables_initializer()
     init_fn = slim.assign_from_checkpoint_fn("CNN_models/resnet_v2_50.ckpt", slim.get_model_variables('resnet_v2'))
     with tf.Session() as sess:
@@ -145,21 +146,28 @@ if __name__ == '__main__':
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
-        # inputs_test, outputs_gt_test = build_img_pair(sess.run(test_batch))
+        inputs_test, outputs_gt_test = build_img_pair(sess.run(test_batch))
+        start_time = time.time()
         for iter in range(FLAGS.max_iteration):
             inputs_train, outputs_gt_train = build_img_pair(sess.run(train_batch))
+            # if iter > 100:
+            #     optimizer = tf.train.MomentumOptimizer(learning_rate = 0.001, momentum = 0.9)
+            #     train_step = optimizer.minimize(cross_entropy)
+            # if iter > 1000:
+            #     optimizer = tf.train.MomentumOptimizer(learning_rate = 0.0001, momentum = 0.9)
+            #     train_step = optimizer.minimize(cross_entropy)
             if iter%10 == 0:
                 summary_train = sess.run(summary, {frame_and_bg:inputs_train, fg_gt:outputs_gt_train})
                 train_writer.add_summary(summary_train, iter)
                 train_writer.flush()
-                # summary_test = sess.run(summary, {frame_and_bg:inputs_test, fg_gt:outputs_gt_test})
-                # test_writer.add_summary(summary_test, iter)
-                # test_writer.flush()
+                summary_test = sess.run(summary, {frame_and_bg:inputs_test, fg_gt:outputs_gt_test})
+                test_writer.add_summary(summary_test, iter)
+                test_writer.flush()
             if iter%100 == 0:
                 train_loss  = cross_entropy.eval({frame_and_bg:inputs_train, fg_gt:outputs_gt_train})
-                # test_loss   = cross_entropy.eval({frame_and_bg:inputs_test, fg_gt:outputs_gt_test})
+                test_loss   = cross_entropy.eval({frame_and_bg:inputs_test, fg_gt:outputs_gt_test})
                 print("iter step %d trainning batch loss %f"%(iter, train_loss))
-                # print("iter step %d test loss %f\n"%(iter, test_loss))
+                print("iter step %d test loss %f\n"%(iter, test_loss))
             if iter%100 == 0:
                 saver.save(sess, "logs/model.ckpt", global_step=iter)
             train_step.run({frame_and_bg:inputs_train, fg_gt:outputs_gt_train})
@@ -168,5 +176,11 @@ if __name__ == '__main__':
         coord.join(threads)
 
         saver.save(sess, "logs/model.ckpt")
-        # test_loss = MSE_loss.eval({frame_and_bg:inputs_test, fg_gt:outputs_gt_test})
-        # print("final test loss %f" % test_loss)
+        test_loss = MSE_loss.eval({frame_and_bg:inputs_test, fg_gt:outputs_gt_test})
+        print("final test loss %f" % test_loss)
+
+        running_time = time.time() - start_time
+        hour = int(running_time / 3600)
+        minute = int((running_time % 3600) / 60)
+        second = (running_time % 3600) % 60
+        print("running time: %d h %d min %d sec", hour, minute, second)
