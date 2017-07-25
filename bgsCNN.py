@@ -2,7 +2,6 @@
 # from prepare_data import prepare_data
 
 import time
-import cv2
 import numpy as np
 import tensorflow as tf
 from tensorflow.contrib.slim.nets import resnet_v2
@@ -56,7 +55,8 @@ def build_img_pair(img_batch):
 
 if __name__ == '__main__':
     FLAGS = tf.app.flags.FLAGS
-    tf.app.flags.DEFINE_integer("batch_size", 30, "size of training batch")
+    tf.app.flags.DEFINE_integer("train_batch_size", 40, "size of training batch")
+    tf.app.flags.DEFINE_integer("test_batch_size", 200, "size of test batch")
     tf.app.flags.DEFINE_integer("max_iteration", 5000, "maximum # of training steps")
     tf.app.flags.DEFINE_integer("image_height", 321, "height of inputs")
     tf.app.flags.DEFINE_integer("image_width", 321, "width of inputs")
@@ -66,16 +66,18 @@ if __name__ == '__main__':
         frame_and_bg = tf.placeholder(tf.float32, [None, FLAGS.image_height, FLAGS.image_height, 6])
         fg_gt = tf.placeholder(tf.float32, [None, FLAGS.image_height, FLAGS.image_height, 1])
         learning_rate = tf.placeholder(tf.float32, [])
+        batch_size = tf.placeholder(tf.int32, [])
         frame = tf.slice(frame_and_bg, [0,0,0,0], [-1,FLAGS.image_height, FLAGS.image_height, 3])
         bg = tf.slice(frame_and_bg, [0,0,0,3], [-1,FLAGS.image_height, FLAGS.image_height, 3])
-        tf.summary.image("frame", frame, max_outputs=10)
-        tf.summary.image("background", bg, max_outputs=10)
-        tf.summary.image("groundtruth", fg_gt, max_outputs=10)
+        tf.summary.image("frame", frame, max_outputs=3)
+        tf.summary.image("background", bg, max_outputs=3)
+        tf.summary.image("groundtruth", fg_gt, max_outputs=3)
 
     with tf.name_scope("pre_conv"):
         W_pre = weight([1, 1, 6, 3], "weights")
         pre_conv = conv2d(frame_and_bg, W_pre)
         tf.summary.histogram("W_pre_conv", W_pre)
+        tf.summary.image("pre_conv_out", pre_conv, max_outputs=3)
 
     with tf.name_scope("resnet_v2"):
         with slim.arg_scope(resnet_v2.resnet_arg_scope()):
@@ -85,6 +87,10 @@ if __name__ == '__main__':
                 is_training = True,
                 global_pool = False,
                 output_stride = 16)
+        resnet_first = tf.slice(net, [0,0,0,0],[-1,21,21,1])
+        resnet_last = tf.slice(net, [0,0,0,2047],[-1,21,21,1])
+        tf.summary.image("resnet_out_first_channel", resnet_first, max_outputs=3)
+        tf.summary.image("resnet_out_last_channel", resnet_last, max_outputs=3)
 
     with tf.name_scope("feature_reduction"):
         net = tf.transpose(net, perm=[0,3,1,2])
@@ -97,30 +103,52 @@ if __name__ == '__main__':
     with tf.name_scope("deconv_1"):
         W_deconv1 = weight([1, 1, 16, 26], "weights")
         deconv_1 = deconv2d(net, W_deconv1,
-            output_shape = [FLAGS.batch_size, 81, 81, 16], strides = [1, 4, 4, 1])
+            output_shape = [batch_size, 81, 81, 16], strides = [1, 4, 4, 1])
         tf.summary.histogram("W_deconv1", W_deconv1)
+        tf.summary.image("deconv1_out_channel1", tf.slice(deconv_1, [0,0,0,0],[-1,81,81,1]), max_outputs=1)
+        tf.summary.image("deconv1_out_channel2", tf.slice(deconv_1, [0,0,0,1],[-1,81,81,1]), max_outputs=1)
+        tf.summary.image("deconv1_out_channel3", tf.slice(deconv_1, [0,0,0,2],[-1,81,81,1]), max_outputs=1)
+        tf.summary.image("deconv1_out_channel4", tf.slice(deconv_1, [0,0,0,3],[-1,81,81,1]), max_outputs=1)
+        tf.summary.image("deconv1_out_channel5", tf.slice(deconv_1, [0,0,0,4],[-1,81,81,1]), max_outputs=1)
+        tf.summary.image("deconv1_out_channel6", tf.slice(deconv_1, [0,0,0,5],[-1,81,81,1]), max_outputs=1)
+        tf.summary.image("deconv1_out_channel7", tf.slice(deconv_1, [0,0,0,6],[-1,81,81,1]), max_outputs=1)
+        tf.summary.image("deconv1_out_channel8", tf.slice(deconv_1, [0,0,0,7],[-1,81,81,1]), max_outputs=1)
 
     with tf.name_scope("deconv_2"):
         W_deconv2 = weight([5, 5, 8, 16], "weights")
         deconv_2 = deconv2d(deconv_1, W_deconv2,
-            output_shape = [FLAGS.batch_size, 165, 165, 8], strides = [1, 2, 2, 1])
+            output_shape = [batch_size, 165, 165, 8], strides = [1, 2, 2, 1])
         tf.summary.histogram("W_deconv2", W_deconv2)
+        tf.summary.image("deconv2_out_channel1", tf.slice(deconv_2, [0,0,0,0],[-1,165,165,1]), max_outputs=1)
+        tf.summary.image("deconv2_out_channel2", tf.slice(deconv_2, [0,0,0,1],[-1,165,165,1]), max_outputs=1)
+        tf.summary.image("deconv2_out_channel3", tf.slice(deconv_2, [0,0,0,2],[-1,165,165,1]), max_outputs=1)
+        tf.summary.image("deconv2_out_channel4", tf.slice(deconv_2, [0,0,0,3],[-1,165,165,1]), max_outputs=1)
+        tf.summary.image("deconv2_out_channel5", tf.slice(deconv_2, [0,0,0,4],[-1,165,165,1]), max_outputs=1)
+        tf.summary.image("deconv2_out_channel6", tf.slice(deconv_2, [0,0,0,5],[-1,165,165,1]), max_outputs=1)
+        tf.summary.image("deconv2_out_channel7", tf.slice(deconv_2, [0,0,0,6],[-1,165,165,1]), max_outputs=1)
+        tf.summary.image("deconv2_out_channel8", tf.slice(deconv_2, [0,0,0,7],[-1,165,165,1]), max_outputs=1)
 
     with tf.name_scope("deconv_3"):
         W_deconv3 = weight([5, 5, 4, 8], "weights")
         deconv_3 = deconv2d(deconv_2, W_deconv3,
-            output_shape = [FLAGS.batch_size, 333, 333, 4], strides = [1, 2, 2, 1])
+            output_shape = [batch_size, 333, 333, 4], strides = [1, 2, 2, 1])
         tf.summary.histogram("W_deconv3", W_deconv3)
+        tf.summary.image("deconv3_out_channel1", tf.slice(deconv_3, [0,0,0,0],[-1,333,333,1]), max_outputs=1)
+        tf.summary.image("deconv3_out_channel2", tf.slice(deconv_3, [0,0,0,1],[-1,333,333,1]), max_outputs=1)
+        tf.summary.image("deconv3_out_channel3", tf.slice(deconv_3, [0,0,0,2],[-1,333,333,1]), max_outputs=1)
+        tf.summary.image("deconv3_out_channel4", tf.slice(deconv_3, [0,0,0,3],[-1,333,333,1]), max_outputs=1)
 
     with tf.name_scope("conv_1"):
         W_conv1 = weight([7, 7, 4, 1], "weights")
         conv_1 = conv2d(deconv_3, W_conv1)
         tf.summary.histogram("W_conv1", W_conv1)
+        tf.summary.image("conv1_out", conv_1, max_outputs=3)
 
     with tf.name_scope("conv_2"):
         W_conv2 = weight([7, 7, 1, 1], "weights")
         conv_2 = conv2d(conv_1, W_conv2)
         tf.summary.histogram("W_conv2", W_conv2)
+        tf.summary.image("conv2_out", conv_2, max_outputs=3)
 
     with tf.name_scope("evaluation"):
         cross_entropy = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels = fg_gt, logits = conv_2))
@@ -135,12 +163,12 @@ if __name__ == '__main__':
     saver = tf.train.Saver()
     img_size = [FLAGS.image_height, FLAGS.image_width, FLAGS.image_depth]
     train_batch = tf.train.shuffle_batch([read_tfrecord(train_file, img_size)],
-                batch_size = FLAGS.batch_size,
+                batch_size = FLAGS.train_batch_size,
                 capacity = 500,
                 num_threads = 2,
                 min_after_dequeue = 300)
     test_batch = tf.train.shuffle_batch([read_tfrecord(test_file, img_size)],
-                batch_size = FLAGS.batch_size,
+                batch_size = FLAGS.test_batch_size,
                 capacity = 500,
                 num_threads = 2,
                 min_after_dequeue = 300)
@@ -156,37 +184,41 @@ if __name__ == '__main__':
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
         inputs_test, outputs_gt_test = build_img_pair(sess.run(test_batch))
-        start_time = time.time()
         for iter in range(FLAGS.max_iteration):
             inputs_train, outputs_gt_train = build_img_pair(sess.run(train_batch))
+            # train with dynamic learning rate
             if iter <= 200:
-                train_step.run({frame_and_bg:inputs_train, fg_gt:outputs_gt_train, learning_rate:0.001})
+                train_step.run({frame_and_bg:inputs_train, fg_gt:outputs_gt_train, learning_rate:1e-3, batch_size:FLAGS.train_batch_size})
+            elif iter <= 1000:
+                train_step.run({frame_and_bg:inputs_train, fg_gt:outputs_gt_train, learning_rate:1e-4, batch_size:FLAGS.train_batch_size})
             elif iter <=FLAGS.max_iteration:
-                train_step.run({frame_and_bg:inputs_train, fg_gt:outputs_gt_train, learning_rate:0.0001})
-
+                train_step.run({frame_and_bg:inputs_train, fg_gt:outputs_gt_train, learning_rate:1e-5, batch_size:FLAGS.train_batch_size})
+            # print training loss and test loss
             if iter%10 == 0:
-                summary_train = sess.run(summary, {frame_and_bg:inputs_train, fg_gt:outputs_gt_train})
+                summary_train = sess.run(summary, {frame_and_bg:inputs_train, fg_gt:outputs_gt_train, batch_size:FLAGS.train_batch_size})
                 train_writer.add_summary(summary_train, iter)
                 train_writer.flush()
-                summary_test = sess.run(summary, {frame_and_bg:inputs_test, fg_gt:outputs_gt_test})
+                summary_test = sess.run(summary, {frame_and_bg:inputs_test, fg_gt:outputs_gt_test, batch_size:FLAGS.test_batch_size})
                 test_writer.add_summary(summary_test, iter)
                 test_writer.flush()
+            # record training loss and test loss
             if iter%10 == 0:
-                train_loss  = cross_entropy.eval({frame_and_bg:inputs_train, fg_gt:outputs_gt_train})
-                test_loss   = cross_entropy.eval({frame_and_bg:inputs_test, fg_gt:outputs_gt_test})
+                train_loss  = cross_entropy.eval({frame_and_bg:inputs_train, fg_gt:outputs_gt_train, batch_size:FLAGS.train_batch_size})
+                test_loss   = cross_entropy.eval({frame_and_bg:inputs_test, fg_gt:outputs_gt_test, batch_size:FLAGS.test_batch_size})
                 print("iter step %d trainning batch loss %f"%(iter, train_loss))
                 print("iter step %d test loss %f\n"%(iter, test_loss))
+            # record model
             if iter%100 == 0:
                 saver.save(sess, "logs/model.ckpt", global_step=iter)
         coord.request_stop()
         coord.join(threads)
 
         saver.save(sess, "logs/model.ckpt")
-        test_loss = cross_entropy.eval({frame_and_bg:inputs_test, fg_gt:outputs_gt_test})
+        test_loss = cross_entropy.eval({frame_and_bg:inputs_test, fg_gt:outputs_gt_test, batch_size:FLAGS.test_batch_size})
         print("final test loss %f" % test_loss)
 
         running_time = time.time() - start_time
         hour = int(running_time / 3600)
         minute = int((running_time % 3600) / 60)
         second = (running_time % 3600) % 60
-        print("running time: %d h %d min %d sec", hour, minute, second)
+        print("running time: %d h %d min %d sec" % (hour, minute, second))
