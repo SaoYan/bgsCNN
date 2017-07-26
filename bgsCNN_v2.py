@@ -57,7 +57,7 @@ if __name__ == '__main__':
     FLAGS = tf.app.flags.FLAGS
     tf.app.flags.DEFINE_integer("train_batch_size", 40, "size of training batch")
     tf.app.flags.DEFINE_integer("test_batch_size", 200, "size of test batch")
-    tf.app.flags.DEFINE_integer("max_iteration", 2500, "maximum # of training steps")
+    tf.app.flags.DEFINE_integer("max_iteration", 5000, "maximum # of training steps")
     tf.app.flags.DEFINE_integer("image_height", 321, "height of inputs")
     tf.app.flags.DEFINE_integer("image_width", 321, "width of inputs")
     tf.app.flags.DEFINE_integer("image_depth", 7, "depth of inputs")
@@ -89,10 +89,6 @@ if __name__ == '__main__':
                 is_training = True,
                 global_pool = False,
                 output_stride = 16)
-        resnet_first = tf.slice(net, [0,0,0,0],[-1,21,21,1])
-        resnet_last = tf.slice(net, [0,0,0,2047],[-1,21,21,1])
-        tf.summary.image("resnet_out_first_channel", resnet_first, max_outputs=3)
-        tf.summary.image("resnet_out_last_channel", resnet_last, max_outputs=3)
 
     with tf.name_scope("feature_reduction"):
         # shape: 21X21X26
@@ -220,8 +216,12 @@ if __name__ == '__main__':
         coord.join(threads)
 
         saver.save(sess, "logs/model.ckpt")
-        test_loss = cross_entropy.eval({frame_and_bg:inputs_test, fg_gt:outputs_gt_test, batch_size:FLAGS.test_batch_size})
-        print("final test loss %f" % test_loss)
+        final_test = 0
+        for i in range(5):
+            inputs_test, outputs_gt_test = build_img_pair(sess.run(test_batch))
+            final_test = final_test + cross_entropy.eval({frame_and_bg:inputs_test, fg_gt:outputs_gt_test, batch_size:FLAGS.test_batch_size})
+        final_test = final_test / 5.
+        print("final test loss %f" % final_test)
 
         running_time = time.time() - start_time
         hour = int(running_time / 3600)
