@@ -124,22 +124,21 @@ if __name__ == '__main__':
         tf.summary.image("channel4", tf.slice(deconv_3, [0,0,0,3],[-1,333,333,1]), max_outputs=3)
 
     with tf.name_scope("conv_1"):
-        # shape: 327X327X4
+        # shape: 321X321X4
         W_conv1 = weight([13, 13, 16, 4], "weights")
         conv_1 = conv2d(deconv_3, W_conv1)
         tf.summary.histogram("W_conv1", W_conv1)
-        tf.summary.image("channel1", tf.slice(conv_1, [0,0,0,0],[-1,327,327,1]), max_outputs=3)
-        tf.summary.image("channel2", tf.slice(conv_1, [0,0,0,1],[-1,327,327,1]), max_outputs=3)
-        tf.summary.image("channel3", tf.slice(conv_1, [0,0,0,2],[-1,327,327,1]), max_outputs=3)
-        tf.summary.image("channel4", tf.slice(conv_1, [0,0,0,3],[-1,327,327,1]), max_outputs=3)
+        tf.summary.image("channel1", tf.slice(conv_1, [0,0,0,0],[-1,321,321,1]), max_outputs=3)
+        tf.summary.image("channel2", tf.slice(conv_1, [0,0,0,1],[-1,321,321,1]), max_outputs=3)
+        tf.summary.image("channel3", tf.slice(conv_1, [0,0,0,2],[-1,321,321,1]), max_outputs=3)
+        tf.summary.image("channel4", tf.slice(conv_1, [0,0,0,3],[-1,321,321,1]), max_outputs=3)
 
-    with tf.name_scope("conv_2"):
+    with tf.name_scope("conv_1"):
         # shape: 321X321X1
         W_conv2 = weight([1, 1, 4, 1], "weights")
         conv_2 = conv2d(conv_1, W_conv2)
-        output = tf.nn.sigmoid(conv_2)
         tf.summary.histogram("W_conv2", W_conv2)
-        tf.summary.image("conv2_out", conv_2, max_outputs=3)
+        tf.summary.image("conv_2_out", tf.slice(conv_2, [0,0,0,0],[-1,321,321,1]), max_outputs=3)
 
     with tf.name_scope("final_result"):
         output = tf.nn.sigmoid(conv_2)
