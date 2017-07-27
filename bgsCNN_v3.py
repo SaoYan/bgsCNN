@@ -209,6 +209,7 @@ if __name__ == '__main__':
                 min_after_dequeue = 300)
     init = tf.global_variables_initializer()
     init_fn = slim.assign_from_checkpoint_fn("CNN_models/resnet_v2_50.ckpt", slim.get_model_variables('resnet_v2'))
+    start_time = time.time()
     with tf.Session() as sess:
         init_fn(sess)
         sess.run(init)
@@ -246,16 +247,16 @@ if __name__ == '__main__':
             # record model
             if iter%100 == 0:
                 saver.save(sess, "logs/model.ckpt", global_step=iter)
-        coord.request_stop()
-        coord.join(threads)
-
+        # final result
         saver.save(sess, "logs/model.ckpt")
         final_test = 0
         for i in range(5):
             inputs_test, outputs_gt_test = build_img_pair(sess.run(test_batch))
-            final_test = final_test + cross_entropy.eval({frame_and_bg:inputs_test, fg_gt:outputs_gt_test, batch_size:FLAGS.test_batch_size})
+            final_test = final_test + cross_entropy.eval({frame_and_bg:inputs_test, fg_gt:outputs_gt_test, batch_size:FLAGS.test_batch_size, p_keep:1.})
         final_test = final_test / 5.
         print("final test loss %f" % final_test)
+        coord.request_stop()
+        coord.join(threads)
 
         running_time = time.time() - start_time
         hour = int(running_time / 3600)
