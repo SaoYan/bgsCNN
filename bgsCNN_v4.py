@@ -197,8 +197,7 @@ if __name__ == '__main__':
         tf.summary.scalar("loss", cross_entropy)
 
     with tf.name_scope('training_op'):
-        # optimizer = tf.train.AdamOptimizer(learning_rate = learning_rate)
-        optimizer = tf.train.RMSPropOptimizer(learning_rate = learning_rate)
+        optimizer = tf.train.AdamOptimizer(learning_rate = learning_rate)
         train_step = optimizer.minimize(cross_entropy)
 
     train_file = "train.tfrecords"
