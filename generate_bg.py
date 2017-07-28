@@ -57,6 +57,9 @@ def generate_bg():
                     elif (frame == None).all():
                         print ("finish with " + dirname_l0 + "\n")
                         break
+                    check = (frame[:,:,0] == frame[:,:,1])
+                    if check.all():
+                        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                     fg = cv2.bitwise_and(bgs.apply(frame), ROI_mask[:,:,0])
                     bg_model = bgs.getBackgroundModel()
                     addition = 83*np.ones(fg.shape, dtype=np.uint8)
@@ -74,3 +77,5 @@ def generate_bg():
                     num = num + 1
                     cv2.waitKey(20)
                 os.makedirs("dataset/" + dirname_l0 + "/done")
+
+generate_bg()

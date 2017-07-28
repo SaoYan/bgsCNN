@@ -55,8 +55,8 @@ def prepare_data(height, width):
                 if (gt_mask == 255).any():
                     frame[idx] = 0
                     bg_model[idx] = 0
-                    gt = np.ones([height, width, 1])
-                    gt[:,:,0] = gt_mask[:,:,0]
+                    gt = gt_mask[:,:,0]
+                    gt = np.expand_dims(gt, axis = 2)
                     data_cube = np.uint8(np.concatenate([frame, bg_model, gt], 2))
                     image_raw = data_cube.tostring()
                     feature={ 'image_raw': _bytes_feature(image_raw) }
