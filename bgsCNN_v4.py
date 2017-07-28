@@ -1,5 +1,5 @@
 # from generate_bg import generate_bg
-from prepare_data import prepare_data
+# from prepare_data import prepare_data
 
 import time
 import numpy as np
@@ -8,7 +8,7 @@ from tensorflow.contrib.slim.nets import resnet_v2
 from tensorflow.contrib import slim
 
 # generate_bg()
-total_num_train, total_num_test = prepare_data(321, 321)
+# total_num_train, total_num_test = prepare_data(321, 321)
 
 def weight(shape, name):
 	initial = tf.truncated_normal(shape, mean=0.0, stddev=0.1, dtype=tf.float32)
@@ -205,7 +205,7 @@ if __name__ == '__main__':
     test_file  = "test.tfrecords"
     saver = tf.train.Saver()
     img_size = [FLAGS.image_height, FLAGS.image_width, FLAGS.image_depth]
-    P = 0.5
+    P = 0.8
     train_batch = tf.train.shuffle_batch([read_tfrecord(train_file, img_size)],
                 batch_size = FLAGS.train_batch_size,
                 capacity = 3000,
