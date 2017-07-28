@@ -142,7 +142,7 @@ if __name__ == '__main__':
 
     with tf.name_scope("final_result"):
         output = tf.nn.sigmoid(conv_2)
-        result = tf.cast(output + 0.5, tf.uint8)
+        result = 255 * tf.cast(output + 0.5, tf.uint8)
         tf.summary.image("sigmoid_out", output, max_outputs=3)
         tf.summary.image("segmentation", result, max_outputs=3)
 

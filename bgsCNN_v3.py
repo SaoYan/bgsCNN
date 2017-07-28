@@ -179,14 +179,13 @@ if __name__ == '__main__':
         tf.summary.image("out", conv, max_outputs=3)
 
     with tf.name_scope("final_result"):
-        feature_map = conv
-        output = tf.nn.sigmoid(feature_map)
-        result = tf.cast(output + 0.1, tf.uint8)
+        output = tf.nn.sigmoid(conv)
+        result = 255 * tf.cast(output + 0.5, tf.uint8)
         tf.summary.image("sigmoid_out", output, max_outputs=3)
         tf.summary.image("segmentation", result, max_outputs=3)
 
     with tf.name_scope("evaluation"):
-        cross_entropy = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels = fg_gt, logits = feature_map))
+        cross_entropy = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels = fg_gt, logits = conv))
         tf.summary.scalar("loss", cross_entropy)
 
     with tf.name_scope('training_op'):
@@ -223,7 +222,6 @@ if __name__ == '__main__':
         for iter in range(FLAGS.max_iteration):
             inputs_train, outputs_gt_train = build_img_pair(sess.run(train_batch))
             # train with dynamic learning rate
-            train_step.run({frame_and_bg:inputs_train, fg_gt:outputs_gt_train, learning_rate:1e-3, batch_size:FLAGS.train_batch_size})
             if iter <= 100:
                 train_step.run({frame_and_bg:inputs_train, fg_gt:outputs_gt_train, learning_rate:1e-3, batch_size:FLAGS.train_batch_size})
             elif iter <= 500:
