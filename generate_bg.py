@@ -77,5 +77,3 @@ def generate_bg():
                     num = num + 1
                     cv2.waitKey(20)
                 os.makedirs("dataset/" + dirname_l0 + "/done")
-
-generate_bg()
