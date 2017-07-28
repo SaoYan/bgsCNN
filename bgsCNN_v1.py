@@ -57,7 +57,7 @@ if __name__ == '__main__':
     FLAGS = tf.app.flags.FLAGS
     tf.app.flags.DEFINE_integer("train_batch_size", 40, "size of training batch")
     tf.app.flags.DEFINE_integer("test_batch_size", 200, "size of test batch")
-    tf.app.flags.DEFINE_integer("max_iteration", 2500, "maximum # of training steps")
+    tf.app.flags.DEFINE_integer("max_iteration", 2000, "maximum # of training steps")
     tf.app.flags.DEFINE_integer("image_height", 321, "height of inputs")
     tf.app.flags.DEFINE_integer("image_width", 321, "width of inputs")
     tf.app.flags.DEFINE_integer("image_depth", 7, "depth of inputs")
