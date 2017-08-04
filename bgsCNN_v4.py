@@ -1,5 +1,5 @@
 # from generate_bg import generate_bg
-# from prepare_data import prepare_data
+from prepare_data import prepare_data
 
 import time
 import numpy as np
@@ -8,17 +8,30 @@ from tensorflow.contrib.slim.nets import resnet_v2
 from tensorflow.contrib import slim
 
 # generate_bg()
-# total_num_train, total_num_test = prepare_data(321, 321)
+total_num_train, total_num_test = prepare_data(320, 320)
 
 def weight(shape, name):
-	initial = tf.truncated_normal(shape, mean=0.0, stddev=0.1, dtype=tf.float32)
-	return tf.Variable(initial,name=name)
+    initial = tf.truncated_normal(shape, mean=0.0, stddev=0.1, dtype=tf.float32)
+    return tf.Variable(initial,name=name)
 
 def conv2d(x, W):
-	return tf.nn.conv2d(x, W, strides = [1,1,1,1], padding = 'VALID')
+    return tf.nn.conv2d(x, W, strides=[1,1,1,1], padding ='SAME')
 
-def deconv2d(x, W, output_shape, strides):
-	return tf.nn.conv2d_transpose(x, W, output_shape = output_shape, strides = strides, padding = 'VALID')
+def deconv2d(x, W, output_shape, padding):
+    return tf.nn.conv2d_transpose(x, W, output_shape=output_shape, strides=[1,1,1,1], padding=padding)
+
+def pooling(x):
+    x_pool, indices = tf.nn.max_pool_with_argmax(x, ksize=[1,2,2,1], strides=[1,2,2,1], padding='VALID')
+    return x_pool, indices
+
+def unpooling(x, indices,  shape):
+    X = tf.reshape(x, [-1])
+    Idx = rf.reshape(indices, [-1])
+    N = np.prod(shape, dtype=np.int32)
+    unpool = tf.Variable(tf.zeros([N]))
+    unpool = tf.scatter_update(unpool, Idx, X)
+    unpool = tf.reshape(unpool, shape=shape)
+    return unpool
 
 def read_tfrecord(tf_filename, image_size):
     filename_queue = tf.train.string_input_producer([tf_filename])
@@ -55,153 +68,271 @@ def build_img_pair(img_batch):
 
 if __name__ == '__main__':
     FLAGS = tf.app.flags.FLAGS
-    tf.app.flags.DEFINE_integer("train_batch_size", 40, "size of training batch")
-    tf.app.flags.DEFINE_integer("test_batch_size", 200, "size of test batch")
-    tf.app.flags.DEFINE_integer("max_iteration", 2000, "maximum # of training steps")
-    tf.app.flags.DEFINE_integer("image_height", 321, "height of inputs")
-    tf.app.flags.DEFINE_integer("image_width", 321, "width of inputs")
+    tf.app.flags.DEFINE_integer("batch_size", 40, "size of training batch")
+    tf.app.flags.DEFINE_integer("max_iteration", 10000, "maximum # of training steps")
+    tf.app.flags.DEFINE_integer("image_height", 320, "height of inputs")
+    tf.app.flags.DEFINE_integer("image_width", 320, "width of inputs")
     tf.app.flags.DEFINE_integer("image_depth", 7, "depth of inputs")
 
     with tf.name_scope("input_data"):
         frame_and_bg = tf.placeholder(tf.float32, [None, FLAGS.image_height, FLAGS.image_height, 6])
         fg_gt = tf.placeholder(tf.float32, [None, FLAGS.image_height, FLAGS.image_height, 1])
         learning_rate = tf.placeholder(tf.float32, [])
-        batch_size = tf.placeholder(tf.int32, [])
-        isTrain = tf.placeholder(tf.bool, shape=())
         frame = tf.slice(frame_and_bg, [0,0,0,0], [-1,FLAGS.image_height, FLAGS.image_height, 3])
         bg = tf.slice(frame_and_bg, [0,0,0,3], [-1,FLAGS.image_height, FLAGS.image_height, 3])
         tf.summary.image("frame", frame, max_outputs=3)
         tf.summary.image("background", bg, max_outputs=3)
         tf.summary.image("groundtruth", fg_gt, max_outputs=3)
 
-    with tf.name_scope("pre_conv"):
-        # shape: 321X321X3
-        W_pre = weight([1, 1, 6, 3], "weights")
-        pre_conv = conv2d(frame_and_bg, W_pre)
-        tf.summary.histogram("W_pre_conv", W_pre)
-        tf.summary.image("pre_conv_out", pre_conv, max_outputs=3)
+    with tf.name_scope("conv_1"):
+        # shape: 320X320X64
+        W_conv1_1 = weight([3, 3, 6, 64], "weights_1")
+        W_conv1_2 = weight([3, 3, 64, 64], "weights_2")
+        conv_1_1 = tf.nn.relu(conv2d(frame_and_bg, W_conv1_1))
+        conv_1_2 = tf.nn.relu(conv2d(conv_1_1, W_conv1_2))
+        tf.summary.histogram("W_conv1_1", W_conv1_1)
+        tf.summary.histogram("W_conv1_2", W_conv1_2)
+        tf.summary.image("channel1", tf.slice(conv_1_2, [0,0,0,0],[-1,320,320,1]), max_outputs=3)
+        tf.summary.image("channel2", tf.slice(conv_1_2, [0,0,0,1],[-1,320,320,1]), max_outputs=3)
+        tf.summary.image("channel3", tf.slice(conv_1_2, [0,0,0,2],[-1,320,320,1]), max_outputs=3)
+        tf.summary.image("channel4", tf.slice(conv_1_2, [0,0,0,3],[-1,320,320,1]), max_outputs=3)
 
-    with tf.name_scope("resnet_v2"):
-        # shape: 21X21X2048
-        with slim.arg_scope(resnet_v2.resnet_arg_scope()):
-            net, end_points = resnet_v2.resnet_v2_50(
-                pre_conv,
-                num_classes = None,
-                is_training = True,
-                global_pool = False,
-                output_stride = 16)
+    with tf.name_scope("conv_1_max_pooling"):
+        # shape: 160X160X64
+        conv_1_pool, indices_1 = pooling(conv_1_2)
+        tf.summary.image("channel1", tf.slice(conv_1_pool, [0,0,0,0],[-1,160,160,1]), max_outputs=3)
+        tf.summary.image("channel2", tf.slice(conv_1_pool, [0,0,0,1],[-1,160,160,1]), max_outputs=3)
+        tf.summary.image("channel3", tf.slice(conv_1_pool, [0,0,0,2],[-1,160,160,1]), max_outputs=3)
+        tf.summary.image("channel4", tf.slice(conv_1_pool, [0,0,0,3],[-1,160,160,1]), max_outputs=3)
 
-    with tf.name_scope("feature_reduction"):
-        # shape: 21X21X51
-        net = tf.transpose(net, perm=[0,3,1,2])
-        net = tf.expand_dims(net, 4)
-        net = tf.nn.avg_pool3d(net, [1,48,1,1,1], [1,40,1,1,1], 'VALID')
-        net = tf.squeeze(net, [4])
-        net = tf.transpose(net, perm=[0,2,3,1])
-        net_bn = tf.contrib.layers.batch_norm(net, decay=0.999,
-                                           center=True, scale=True,
-                                           epsilon=1e-3, is_training=isTrain)
+    with tf.name_scope("conv_2"):
+        # shape: 160X160x128
+        W_conv2_1 = weight([3, 3, 64, 128], "weights_1")
+        W_conv2_2 = weight([3, 3, 128, 128], "weights_2")
+        conv_2_1 = tf.nn.relu(conv2d(conv_1_pool, W_conv2_1))
+        conv_2_2 = tf.nn.relu(conv2d(conv_2_1, W_conv2_2))
+        tf.summary.histogram("W_conv2_1", W_conv2_1)
+        tf.summary.histogram("W_conv2_2", W_conv2_2)
+        tf.summary.image("channel1", tf.slice(conv_2_2, [0,0,0,0],[-1,160,160,1]), max_outputs=3)
+        tf.summary.image("channel2", tf.slice(conv_2_2, [0,0,0,1],[-1,160,160,1]), max_outputs=3)
+        tf.summary.image("channel3", tf.slice(conv_2_2, [0,0,0,2],[-1,160,160,1]), max_outputs=3)
+        tf.summary.image("channel4", tf.slice(conv_2_2, [0,0,0,3],[-1,160,160,1]), max_outputs=3)
 
-    with tf.name_scope("deconv_1"):
-        # shape: 43X43X32
-        W_deconv1 = weight([3, 3, 32, 51], "weights")
-        deconv_1 = deconv2d(net_bn, W_deconv1,
-            output_shape = [batch_size, 43, 43, 32], strides = [1, 2, 2, 1])
-        tf.summary.histogram("W_deconv1", W_deconv1)
-        tf.summary.image("channel1", tf.slice(deconv_1, [0,0,0,0],[-1,43,43,1]), max_outputs=3)
-        tf.summary.image("channel2", tf.slice(deconv_1, [0,0,0,1],[-1,43,43,1]), max_outputs=3)
-        tf.summary.image("channel3", tf.slice(deconv_1, [0,0,0,2],[-1,43,43,1]), max_outputs=3)
-        tf.summary.image("channel4", tf.slice(deconv_1, [0,0,0,3],[-1,43,43,1]), max_outputs=3)
+    with tf.name_scope("conv_2_max_pooling"):
+        # shape: 80X80X128
+        conv_2_pool, indices_2 = pooling(conv_2_2)
+        tf.summary.image("channel1", tf.slice(conv_2_pool, [0,0,0,0],[-1,80,80,1]), max_outputs=3)
+        tf.summary.image("channel2", tf.slice(conv_2_pool, [0,0,0,1],[-1,80,80,1]), max_outputs=3)
+        tf.summary.image("channel3", tf.slice(conv_2_pool, [0,0,0,2],[-1,80,80,1]), max_outputs=3)
+        tf.summary.image("channel4", tf.slice(conv_2_pool, [0,0,0,3],[-1,80,80,1]), max_outputs=3)
 
-    with tf.name_scope("deconv_1_max_pooling"):
-        # shape: 41X41X16
-        deconv_1_pool = tf.transpose(deconv_1, perm=[0,3,1,2])
-        deconv_1_pool = tf.expand_dims(deconv_1_pool, 4)
-        deconv_1_pool = tf.nn.max_pool3d(deconv_1_pool, [1,2,3,3,1], [1,2,1,1,1], 'VALID')
-        deconv_1_pool = tf.squeeze(deconv_1_pool, [4])
-        deconv_1_pool = tf.transpose(deconv_1_pool, perm=[0,2,3,1])
-        deconv_1_pool_bn = tf.contrib.layers.batch_norm(deconv_1_pool, decay=0.999,
-                                           center=True, scale=True,
-                                           epsilon=1e-3, is_training=isTrain)
-        tf.summary.image("channel1", tf.slice(deconv_1_pool, [0,0,0,0],[-1,41,41,1]), max_outputs=3)
-        tf.summary.image("channel2", tf.slice(deconv_1_pool, [0,0,0,1],[-1,41,41,1]), max_outputs=3)
-        tf.summary.image("channel3", tf.slice(deconv_1_pool, [0,0,0,2],[-1,41,41,1]), max_outputs=3)
-        tf.summary.image("channel4", tf.slice(deconv_1_pool, [0,0,0,3],[-1,41,41,1]), max_outputs=3)
+    with tf.name_scope("conv_3"):
+        # shape: 80X80X256
+        W_conv3_1 = weight([3, 3, 128, 256], "weights_1")
+        W_conv3_2 = weight([3, 3, 256, 256], "weights_2")
+        W_conv3_3 = weight([3, 3, 256, 256], "weights_3")
+        conv_3_1 = tf.nn.relu(conv2d(conv_2_pool, W_conv3_1))
+        conv_3_2 = tf.nn.relu(conv2d(conv_3_1, W_conv3_2))
+        conv_3_3 = tf.nn.relu(conv2d(conv_3_2, W_conv3_3))
+        tf.summary.histogram("W_conv3_1", W_conv3_1)
+        tf.summary.histogram("W_conv3_2", W_conv3_2)
+        tf.summary.histogram("W_conv3_3", W_conv3_3)
+        tf.summary.image("channel1", tf.slice(conv_3_3, [0,0,0,0],[-1,80,80,1]), max_outputs=3)
+        tf.summary.image("channel2", tf.slice(conv_3_3, [0,0,0,1],[-1,80,80,1]), max_outputs=3)
+        tf.summary.image("channel3", tf.slice(conv_3_3, [0,0,0,2],[-1,80,80,1]), max_outputs=3)
+        tf.summary.image("channel4", tf.slice(conv_3_3, [0,0,0,3],[-1,80,80,1]), max_outputs=3)
 
-    with tf.name_scope("deconv_2"):
-        # shape: 83X83X8
-        W_deconv2 = weight([3, 3, 8, 16], "weights")
-        deconv_2 = deconv2d(deconv_1_pool_bn, W_deconv2,
-            output_shape = [batch_size, 83, 83, 8], strides = [1, 2, 2, 1])
-        tf.summary.histogram("W_deconv2", W_deconv2)
-        tf.summary.image("channel1", tf.slice(deconv_2, [0,0,0,0],[-1,83,83,1]), max_outputs=3)
-        tf.summary.image("channel2", tf.slice(deconv_2, [0,0,0,1],[-1,83,83,1]), max_outputs=3)
-        tf.summary.image("channel3", tf.slice(deconv_2, [0,0,0,2],[-1,83,83,1]), max_outputs=3)
-        tf.summary.image("channel4", tf.slice(deconv_2, [0,0,0,3],[-1,83,83,1]), max_outputs=3)
+    with tf.name_scope("conv_3_max_pooling"):
+        # shape: 40X40X256
+        conv_3_pool, indices_3 = pooling(conv_3_3)
+        tf.summary.image("channel1", tf.slice(conv_3_pool, [0,0,0,0],[-1,40,40,1]), max_outputs=3)
+        tf.summary.image("channel2", tf.slice(conv_3_pool, [0,0,0,1],[-1,40,40,1]), max_outputs=3)
+        tf.summary.image("channel3", tf.slice(conv_3_pool, [0,0,0,2],[-1,40,40,1]), max_outputs=3)
+        tf.summary.image("channel4", tf.slice(conv_3_pool, [0,0,0,3],[-1,40,40,1]), max_outputs=3)
 
-    with tf.name_scope("deconv_2_max_pooling"):
-        # shape: 81X81X8
-        deconv_2_pool = tf.nn.max_pool(deconv_2, [1,3,3,1], [1,1,1,1], 'VALID')
-        deconv_2_pool_bn = tf.contrib.layers.batch_norm(deconv_2_pool, decay=0.999,
-                                           center=True, scale=True,
-                                           epsilon=1e-3, is_training=isTrain)
-        tf.summary.image("channel1", tf.slice(deconv_2_pool, [0,0,0,0],[-1,81,81,1]), max_outputs=3)
-        tf.summary.image("channel2", tf.slice(deconv_2_pool, [0,0,0,1],[-1,81,81,1]), max_outputs=3)
-        tf.summary.image("channel3", tf.slice(deconv_2_pool, [0,0,0,2],[-1,81,81,1]), max_outputs=3)
-        tf.summary.image("channel4", tf.slice(deconv_2_pool, [0,0,0,3],[-1,81,81,1]), max_outputs=3)
+    with tf.name_scope("conv_4"):
+        # shape: 40X40X512
+        W_conv4_1 = weight([3, 3, 256, 512], "weights_1")
+        W_conv4_2 = weight([3, 3, 512, 512], "weights_2")
+        W_conv4_3 = weight([3, 3, 512, 512], "weights_3")
+        conv_4_1 = tf.nn.relu(conv2d(conv_3_pool, W_conv4_1))
+        conv_4_2 = tf.nn.relu(conv2d(conv_4_1, W_conv4_2))
+        conv_4_3 = tf.nn.relu(conv2d(conv_4_2, W_conv4_3))
+        tf.summary.histogram("W_conv4_1", W_conv4_1)
+        tf.summary.histogram("W_conv4_2", W_conv4_2)
+        tf.summary.histogram("W_conv4_3", W_conv4_3)
+        tf.summary.image("channel1", tf.slice(conv_4_3, [0,0,0,0],[-1,40,40,1]), max_outputs=3)
+        tf.summary.image("channel2", tf.slice(conv_4_3, [0,0,0,1],[-1,40,40,1]), max_outputs=3)
+        tf.summary.image("channel3", tf.slice(conv_4_3, [0,0,0,2],[-1,40,40,1]), max_outputs=3)
+        tf.summary.image("channel4", tf.slice(conv_4_3, [0,0,0,3],[-1,40,40,1]), max_outputs=3)
 
-    with tf.name_scope("deconv_3"):
-        # shape: 163X163X4
-        W_deconv3 = weight([3, 3, 4, 8], "weights")
-        deconv_3 = deconv2d(deconv_2_pool_bn, W_deconv3,
-            output_shape = [batch_size, 163, 163, 4], strides = [1, 2, 2, 1])
-        tf.summary.histogram("W_deconv3", W_deconv3)
-        tf.summary.image("channel1", tf.slice(deconv_3, [0,0,0,0],[-1,163,163,1]), max_outputs=3)
-        tf.summary.image("channel2", tf.slice(deconv_3, [0,0,0,1],[-1,163,163,1]), max_outputs=3)
-        tf.summary.image("channel3", tf.slice(deconv_3, [0,0,0,2],[-1,163,163,1]), max_outputs=3)
-        tf.summary.image("channel4", tf.slice(deconv_3, [0,0,0,3],[-1,163,163,1]), max_outputs=3)
+    with tf.name_scope("conv_4_max_pooling"):
+        # shape: 20X20X512
+        conv_4_pool, indices_4 = pooling(conv_4_3)
+        tf.summary.image("channel1", tf.slice(conv_4_pool, [0,0,0,0],[-1,40,40,1]), max_outputs=3)
+        tf.summary.image("channel2", tf.slice(conv_4_pool, [0,0,0,1],[-1,40,40,1]), max_outputs=3)
+        tf.summary.image("channel3", tf.slice(conv_4_pool, [0,0,0,2],[-1,40,40,1]), max_outputs=3)
+        tf.summary.image("channel4", tf.slice(conv_4_pool, [0,0,0,3],[-1,40,40,1]), max_outputs=3)
 
-    with tf.name_scope("deconv_3_max_pooling"):
-        # shape: 161X161X4
-        deconv_3_pool = tf.nn.max_pool(deconv_3, [1,3,3,1], [1,1,1,1], 'VALID')
-        deconv_3_pool_bn = tf.contrib.layers.batch_norm(deconv_3_pool, decay=0.999,
-                                           center=True, scale=True,
-                                           epsilon=1e-3, is_training=isTrain)
-        tf.summary.image("channel1", tf.slice(deconv_3_pool, [0,0,0,0],[-1,161,161,1]), max_outputs=3)
-        tf.summary.image("channel2", tf.slice(deconv_3_pool, [0,0,0,1],[-1,161,161,1]), max_outputs=3)
-        tf.summary.image("channel3", tf.slice(deconv_3_pool, [0,0,0,2],[-1,161,161,1]), max_outputs=3)
-        tf.summary.image("channel4", tf.slice(deconv_3_pool, [0,0,0,3],[-1,161,161,1]), max_outputs=3)
+    with tf.name_scope("conv_5"):
+        # shape: 20X20X512
+        W_conv5_1 = weight([3, 3, 512, 512], "weights_1")
+        W_conv5_2 = weight([3, 3, 512, 512], "weights_2")
+        W_conv5_3 = weight([3, 3, 512, 512], "weights_3")
+        conv_5_1 = tf.nn.relu(conv2d(conv_4_pool, W_conv5_1))
+        conv_5_2 = tf.nn.relu(conv2d(conv_5_1, W_conv5_2))
+        conv_5_3 = tf.nn.relu(conv2d(conv_5_2, W_conv5_3))
+        tf.summary.histogram("W_conv5_1", W_conv5_1)
+        tf.summary.histogram("W_conv5_2", W_conv5_2)
+        tf.summary.histogram("W_conv5_3", W_conv5_3)
+        tf.summary.image("channel1", tf.slice(conv_5_3, [0,0,0,0],[-1,20,20,1]), max_outputs=3)
+        tf.summary.image("channel2", tf.slice(conv_5_3, [0,0,0,1],[-1,20,20,1]), max_outputs=3)
+        tf.summary.image("channel3", tf.slice(conv_5_3, [0,0,0,2],[-1,20,20,1]), max_outputs=3)
+        tf.summary.image("channel4", tf.slice(conv_5_3, [0,0,0,3],[-1,20,20,1]), max_outputs=3)
+
+    with tf.name_scope("conv_5_max_pooling"):
+        # shape: 10X10X512
+        conv_5_pool, indices_5 = pooling(conv_5_3)
+        tf.summary.image("channel1", tf.slice(conv_5_pool, [0,0,0,0],[-1,10,10,1]), max_outputs=3)
+        tf.summary.image("channel2", tf.slice(conv_5_pool, [0,0,0,1],[-1,10,10,1]), max_outputs=3)
+        tf.summary.image("channel3", tf.slice(conv_5_pool, [0,0,0,2],[-1,10,10,1]), max_outputs=3)
+        tf.summary.image("channel4", tf.slice(conv_5_pool, [0,0,0,3],[-1,10,10,1]), max_outputs=3)
+
+    with tf.name_scope("fully_connect"):
+        # shape: 1x1x1024
+        W_fc = weight([10,10,512,1024], "weight")
+        fc = tf.nn.conv2d(conv_5_pool, W_fc, strides=[1,1,1,1], padding ='VALID')
+        tf.summary.histogram("W_fc", W_fc)
+
+    with tf.name_scope("de_fc"):
+        # shape: 10X10X512
+        W_defc = weight([10,10,512,1024], "weight")
+        defc = deconv2d(fc, W_defc, output_shape=[FLAGS.batch_size,10,10,512], padding='VALID')
+        tf.summary.histogram("W_defc", W_defc)
+        tf.summary.image("channel1", tf.slice(defc, [0,0,0,0],[-1,10,10,1]), max_outputs=3)
+        tf.summary.image("channel2", tf.slice(defc, [0,0,0,1],[-1,10,10,1]), max_outputs=3)
+        tf.summary.image("channel3", tf.slice(defc, [0,0,0,2],[-1,10,10,1]), max_outputs=3)
+        tf.summary.image("channel4", tf.slice(defc, [0,0,0,3],[-1,10,10,1]), max_outputs=3)
+
+    with tf.name_scope("unpool_5"):
+        # shape: 20X20X512
+        unpool_5 = unpooling(defc, indices_5, shape=[FLAGS.batch_size,20,20,512])
+        tf.summary.image("channel1", tf.slice(unpool_5, [0,0,0,0],[-1,20,20,1]), max_outputs=3)
+        tf.summary.image("channel2", tf.slice(unpool_5, [0,0,0,1],[-1,20,20,1]), max_outputs=3)
+        tf.summary.image("channel3", tf.slice(unpool_5, [0,0,0,2],[-1,20,20,1]), max_outputs=3)
+        tf.summary.image("channel4", tf.slice(unpool_5, [0,0,0,3],[-1,20,20,1]), max_outputs=3)
+
+    with tf.name_scope("deconv_5"):
+        # shape: 20X20X512
+        W_deconv5_1 = weight([3, 3, 512, 512], "weights_1")
+        W_deconv5_2 = weight([3, 3, 512, 512], "weights_2")
+        W_deconv5_3 = weight([3, 3, 512, 512], "weights_3")
+        deconv_5_1 = tf.nn.relu(deconv2d(unpool_5, W_deconv5_1, output_shape=[FLAGS.batch_size,20,20,512], padding='SAME'))
+        deconv_5_2 = tf.nn.relu(deconv2d(deconv_5_1, W_deconv5_2, output_shape=[FLAGS.batch_size,20,20,512], padding='SAME'))
+        deconv_5_3 = tf.nn.relu(deconv2d(deconv_5_2, W_deconv5_3, output_shape=[FLAGS.batch_size,20,20,512], padding='SAME'))
+        tf.summary.histogram("W_conv5_1", W_deconv5_1)
+        tf.summary.histogram("W_conv5_2", W_deconv5_2)
+        tf.summary.histogram("W_conv5_3", W_deconv5_3)
+        tf.summary.image("channel1", tf.slice(deconv_5_3, [0,0,0,0],[-1,20,20,1]), max_outputs=3)
+        tf.summary.image("channel2", tf.slice(deconv_5_3, [0,0,0,1],[-1,20,20,1]), max_outputs=3)
+        tf.summary.image("channel3", tf.slice(deconv_5_3, [0,0,0,2],[-1,20,20,1]), max_outputs=3)
+        tf.summary.image("channel4", tf.slice(deconv_5_3, [0,0,0,3],[-1,20,20,1]), max_outputs=3)
+
+    with tf.name_scope("unpool_4"):
+        # shape: 40X40X512
+        unpool_4 = unpooling(deconv_5_3, indices_4, shape=[FLAGS.batch_size,40,40,512])
+        tf.summary.image("channel1", tf.slice(unpool_4, [0,0,0,0],[-1,40,40,1]), max_outputs=3)
+        tf.summary.image("channel2", tf.slice(unpool_4, [0,0,0,1],[-1,40,40,1]), max_outputs=3)
+        tf.summary.image("channel3", tf.slice(unpool_4, [0,0,0,2],[-1,40,40,1]), max_outputs=3)
+        tf.summary.image("channel4", tf.slice(unpool_4, [0,0,0,3],[-1,40,40,1]), max_outputs=3)
 
     with tf.name_scope("deconv_4"):
-        # shape: 323X323X1
-        W_deconv4 = weight([3, 3, 1, 4], "weights")
-        deconv_4 = deconv2d(deconv_3_pool_bn, W_deconv4,
-            output_shape = [batch_size, 323, 323, 1], strides = [1, 2, 2, 1])
-        tf.summary.histogram("W_deconv4", W_deconv4)
-        tf.summary.image("out", tf.slice(deconv_4, [0,0,0,0],[-1,323,323,1]), max_outputs=3)
+        # shape: 40X40X256
+        W_deconv4_1 = weight([3, 3, 512, 512], "weights_1")
+        W_deconv4_2 = weight([3, 3, 512, 512], "weights_2")
+        W_deconv4_3 = weight([3, 3, 256, 512], "weights_3")
+        deconv_4_1 = tf.nn.relu(deconv2d(unpool_4, W_deconv4_1, output_shape=[FLAGS.batch_size,40,40,512], padding='SAME'))
+        deconv_4_2 = tf.nn.relu(deconv2d(deconv_4_1, W_deconv4_2, output_shape=[FLAGS.batch_size,40,40,512], padding='SAME'))
+        deconv_4_3 = tf.nn.relu(deconv2d(deconv_4_2, W_deconv4_3, output_shape=[FLAGS.batch_size,40,40,256], padding='SAME'))
+        tf.summary.histogram("W_conv4_1", W_deconv4_1)
+        tf.summary.histogram("W_conv4_2", W_deconv4_2)
+        tf.summary.histogram("W_conv4_3", W_deconv4_3)
+        tf.summary.image("channel1", tf.slice(deconv_4_3, [0,0,0,0],[-1,40,40,1]), max_outputs=3)
+        tf.summary.image("channel2", tf.slice(deconv_4_3, [0,0,0,1],[-1,40,40,1]), max_outputs=3)
+        tf.summary.image("channel3", tf.slice(deconv_4_3, [0,0,0,2],[-1,40,40,1]), max_outputs=3)
+        tf.summary.image("channel4", tf.slice(deconv_4_3, [0,0,0,3],[-1,40,40,1]), max_outputs=3)
 
-    with tf.name_scope("deconv_4_max_pooling"):
-        # shape: 321X321X1
-        deconv_4_pool = tf.nn.max_pool(deconv_4, [1,3,3,1], [1,1,1,1], 'VALID')
-        deconv_4_pool_bn = tf.contrib.layers.batch_norm(deconv_4_pool, decay=0.999,
-                                           center=True, scale=True,
-                                           epsilon=1e-3, is_training=isTrain)
-        tf.summary.image("out", tf.slice(deconv_4_pool, [0,0,0,0],[-1,321,321,1]), max_outputs=3)
+    with tf.name_scope("unpool_3"):
+        # shape: 80X80X256
+        unpool_3 = unpooling(deconv_4_3, indices_3, shape=[FLAGS.batch_size,80,80,256])
+        tf.summary.image("channel1", tf.slice(unpool_3, [0,0,0,0],[-1,80,80,1]), max_outputs=3)
+        tf.summary.image("channel2", tf.slice(unpool_3, [0,0,0,1],[-1,80,80,1]), max_outputs=3)
+        tf.summary.image("channel3", tf.slice(unpool_3, [0,0,0,2],[-1,80,80,1]), max_outputs=3)
+        tf.summary.image("channel4", tf.slice(unpool_3, [0,0,0,3],[-1,80,80,1]), max_outputs=3)
 
-    with tf.name_scope("conv"):
-        W_conv = weight([1, 1, 1, 1], "weights")
-        conv = conv2d(deconv_4_pool_bn, W_conv)
-        tf.summary.histogram("W_conv1", W_conv)
-        tf.summary.image("out", conv, max_outputs=3)
+    with tf.name_scope("deconv_3"):
+        # shape: 80X80X128
+        W_deconv3_1 = weight([3, 3, 256, 256], "weights_1")
+        W_deconv3_2 = weight([3, 3, 256, 256], "weights_2")
+        W_deconv3_3 = weight([3, 3, 128, 256], "weights_3")
+        deconv_3_1 = tf.nn.relu(deconv2d(unpool_3, W_deconv3_1, output_shape=[FLAGS.batch_size,80,80,256], padding='SAME'))
+        deconv_3_2 = tf.nn.relu(deconv2d(deconv_3_1, W_deconv3_2, output_shape=[FLAGS.batch_size,80,80,256], padding='SAME'))
+        deconv_3_3 = tf.nn.relu(deconv2d(deconv_3_2, W_deconv3_3, output_shape=[FLAGS.batch_size,80,80,128], padding='SAME'))
+        tf.summary.histogram("W_conv3_1", W_deconv3_1)
+        tf.summary.histogram("W_conv3_2", W_deconv3_2)
+        tf.summary.histogram("W_conv3_3", W_deconv3_3)
+        tf.summary.image("channel1", tf.slice(deconv_3_3, [0,0,0,0],[-1,80,80,1]), max_outputs=3)
+        tf.summary.image("channel2", tf.slice(deconv_3_3, [0,0,0,1],[-1,80,80,1]), max_outputs=3)
+        tf.summary.image("channel3", tf.slice(deconv_3_3, [0,0,0,2],[-1,80,80,1]), max_outputs=3)
+        tf.summary.image("channel4", tf.slice(deconv_3_3, [0,0,0,3],[-1,80,80,1]), max_outputs=3)
+
+    with tf.name_scope("unpool_2"):
+        # shape: 160X160X128
+        unpool_2 = unpooling(deconv_3_3, indices_2, shape=[FLAGS.batch_size,160,160,128])
+        tf.summary.image("channel1", tf.slice(unpool_2, [0,0,0,0],[-1,160,160,1]), max_outputs=3)
+        tf.summary.image("channel2", tf.slice(unpool_2, [0,0,0,1],[-1,160,160,1]), max_outputs=3)
+        tf.summary.image("channel3", tf.slice(unpool_2, [0,0,0,2],[-1,160,160,1]), max_outputs=3)
+        tf.summary.image("channel4", tf.slice(unpool_2, [0,0,0,3],[-1,160,160,1]), max_outputs=3)
+
+    with tf.name_scope("deconv_2"):
+        # shape: 160X160x64
+        W_deconv2_1 = weight([3, 3, 128, 128], "weights_1")
+        W_deconv2_2 = weight([3, 3, 64, 128], "weights_2")
+        deconv_2_1 = tf.nn.relu(deconv2d(unpool_2, W_deconv2_1, output_shape=[FLAGS.batch_size,160,160,128], padding='SAME'))
+        deconv_2_2 = tf.nn.relu(deconv2d(deconv_2_1, W_deconv2_2, output_shape=[FLAGS.batch_size,160,160,64], padding='SAME'))
+        tf.summary.histogram("W_deconv2_1", W_deconv2_1)
+        tf.summary.histogram("W_deconv2_2", W_deconv2_2)
+        tf.summary.image("channel1", tf.slice(deconv_2_2, [0,0,0,0],[-1,160,160,1]), max_outputs=3)
+        tf.summary.image("channel2", tf.slice(deconv_2_2, [0,0,0,1],[-1,160,160,1]), max_outputs=3)
+        tf.summary.image("channel3", tf.slice(deconv_2_2, [0,0,0,2],[-1,160,160,1]), max_outputs=3)
+        tf.summary.image("channel4", tf.slice(deconv_2_2, [0,0,0,3],[-1,160,160,1]), max_outputs=3)
+
+    with tf.name_scope("unpool_1"):
+        # shape: 320X320X64
+        unpool_1 = unpooling(deconv_2_2, indices_1, shape=[FLAGS.batch_size,320,320,64])
+        tf.summary.image("channel1", tf.slice(unpool_1, [0,0,0,0],[-1,320,320,1]), max_outputs=3)
+        tf.summary.image("channel2", tf.slice(unpool_1, [0,0,0,1],[-1,320,320,1]), max_outputs=3)
+        tf.summary.image("channel3", tf.slice(unpool_1, [0,0,0,2],[-1,320,320,1]), max_outputs=3)
+        tf.summary.image("channel4", tf.slice(unpool_1, [0,0,0,3],[-1,320,320,1]), max_outputs=3)
+
+    with tf.name_scope("deconv_1"):
+        # shape: 320X320X1
+        W_deconv1_1 = weight([3, 3, 64, 64], "weights_1")
+        W_deconv1_2 = weight([3, 3, 1, 64], "weights_2")
+        deconv_1_1 = tf.nn.relu(deconv2d(unpool_1, W_deconv1_1, output_shape=[FLAGS.batch_size,320,320,64], padding='SAME'))
+        deconv_1_2 = tf.nn.relu(deconv2d(deconv_1_1, W_deconv1_2, output_shape=[FLAGS.batch_size,320,320,1], padding='SAME'))
+        tf.summary.histogram("W_deconv1_1", W_deconv1_1)
+        tf.summary.histogram("W_deconv1_2", W_deconv1_2)
+        tf.summary.image("output_feature", deconv_1_2, max_outputs=3)
 
     with tf.name_scope("final_result"):
-        output = tf.nn.sigmoid(conv)
-        result = tf.cast(output + 0.1, tf.uint8)
+        output = tf.nn.sigmoid(deconv_1_2)
+        result = 255 * tf.cast(output + 0.5, tf.uint8)
         tf.summary.image("sigmoid_out", output, max_outputs=3)
         tf.summary.image("segmentation", result, max_outputs=3)
 
     with tf.name_scope("evaluation"):
-        cross_entropy = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels = fg_gt, logits = conv))
+        cross_entropy = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels = fg_gt, logits = deconv_1_2))
         tf.summary.scalar("loss", cross_entropy)
 
     with tf.name_scope('training_op'):
@@ -213,17 +344,18 @@ if __name__ == '__main__':
     saver = tf.train.Saver()
     img_size = [FLAGS.image_height, FLAGS.image_width, FLAGS.image_depth]
     train_batch = tf.train.shuffle_batch([read_tfrecord(train_file, img_size)],
-                batch_size = FLAGS.train_batch_size,
+                batch_size = FLAGS.batch_size,
                 capacity = 3000,
                 num_threads = 2,
                 min_after_dequeue = 1000)
     test_batch = tf.train.shuffle_batch([read_tfrecord(test_file, img_size)],
-                batch_size = FLAGS.test_batch_size,
+                batch_size = FLAGS.batch_size,
                 capacity = 500,
                 num_threads = 2,
                 min_after_dequeue = 300)
     init = tf.global_variables_initializer()
     init_fn = slim.assign_from_checkpoint_fn("CNN_models/resnet_v2_50.ckpt", slim.get_model_variables('resnet_v2'))
+    start_time = time.time()
     with tf.Session() as sess:
         init_fn(sess)
         sess.run(init)
@@ -237,39 +369,39 @@ if __name__ == '__main__':
         for iter in range(FLAGS.max_iteration):
             inputs_train, outputs_gt_train = build_img_pair(sess.run(train_batch))
             # train with dynamic learning rate
-            if iter <= 100:
-                train_step.run({frame_and_bg:inputs_train, fg_gt:outputs_gt_train, learning_rate:1e-3, batch_size:FLAGS.train_batch_size, isTrain:True})
-            elif iter <= 500:
-                train_step.run({frame_and_bg:inputs_train, fg_gt:outputs_gt_train, learning_rate:0.5e-4, batch_size:FLAGS.train_batch_size, isTrain:True})
+            if iter <= 500:
+                train_step.run({frame_and_bg:inputs_train, fg_gt:outputs_gt_train, learning_rate:1e-3})
+            elif iter <= FLAGS.max_iteration - 1000:
+                train_step.run({frame_and_bg:inputs_train, fg_gt:outputs_gt_train, learning_rate:0.5e-3})
             else:
-                train_step.run({frame_and_bg:inputs_train, fg_gt:outputs_gt_train, learning_rate:1e-4, batch_size:FLAGS.train_batch_size, isTrain:True})
+                train_step.run({frame_and_bg:inputs_train, fg_gt:outputs_gt_train, learning_rate:1e-4})
             # print training loss and test loss
             if iter%10 == 0:
-                summary_train = sess.run(summary, {frame_and_bg:inputs_train, fg_gt:outputs_gt_train, batch_size:FLAGS.train_batch_size, isTrain:False})
+                summary_train = sess.run(summary, {frame_and_bg:inputs_train, fg_gt:outputs_gt_train})
                 train_writer.add_summary(summary_train, iter)
                 train_writer.flush()
-                summary_test = sess.run(summary, {frame_and_bg:inputs_test, fg_gt:outputs_gt_test, batch_size:FLAGS.test_batch_size, isTrain:False})
+                summary_test = sess.run(summary, {frame_and_bg:inputs_test, fg_gt:outputs_gt_test})
                 test_writer.add_summary(summary_test, iter)
                 test_writer.flush()
             # record training loss and test loss
             if iter%10 == 0:
-                train_loss  = cross_entropy.eval({frame_and_bg:inputs_train, fg_gt:outputs_gt_train, batch_size:FLAGS.train_batch_size, isTrain:False})
-                test_loss   = cross_entropy.eval({frame_and_bg:inputs_test, fg_gt:outputs_gt_test, batch_size:FLAGS.test_batch_size, isTrain:False})
+                train_loss  = cross_entropy.eval({frame_and_bg:inputs_train, fg_gt:outputs_gt_train})
+                test_loss   = cross_entropy.eval({frame_and_bg:inputs_test, fg_gt:outputs_gt_test})
                 print("iter step %d trainning batch loss %f"%(iter, train_loss))
                 print("iter step %d test loss %f\n"%(iter, test_loss))
             # record model
             if iter%100 == 0:
                 saver.save(sess, "logs/model.ckpt", global_step=iter)
-        coord.request_stop()
-        coord.join(threads)
-
+        # final result
         saver.save(sess, "logs/model.ckpt")
         final_test = 0
         for i in range(5):
             inputs_test, outputs_gt_test = build_img_pair(sess.run(test_batch))
-            final_test = final_test + cross_entropy.eval({frame_and_bg:inputs_test, fg_gt:outputs_gt_test, batch_size:FLAGS.test_batch_size, isTrain:False})
+            final_test = final_test + cross_entropy.eval({frame_and_bg:inputs_test, fg_gt:outputs_gt_test})
         final_test = final_test / 5.
         print("final test loss %f" % final_test)
+        coord.request_stop()
+        coord.join(threads)
 
         running_time = time.time() - start_time
         hour = int(running_time / 3600)

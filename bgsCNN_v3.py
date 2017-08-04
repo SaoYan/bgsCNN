@@ -57,7 +57,7 @@ if __name__ == '__main__':
     FLAGS = tf.app.flags.FLAGS
     tf.app.flags.DEFINE_integer("train_batch_size", 40, "size of training batch")
     tf.app.flags.DEFINE_integer("test_batch_size", 200, "size of test batch")
-    tf.app.flags.DEFINE_integer("max_iteration", 2000, "maximum # of training steps")
+    tf.app.flags.DEFINE_integer("max_iteration", 10000, "maximum # of training steps")
     tf.app.flags.DEFINE_integer("image_height", 321, "height of inputs")
     tf.app.flags.DEFINE_integer("image_width", 321, "width of inputs")
     tf.app.flags.DEFINE_integer("image_depth", 7, "depth of inputs")
@@ -222,12 +222,12 @@ if __name__ == '__main__':
         for iter in range(FLAGS.max_iteration):
             inputs_train, outputs_gt_train = build_img_pair(sess.run(train_batch))
             # train with dynamic learning rate
-            if iter <= 100:
+            if iter <= 500:
                 train_step.run({frame_and_bg:inputs_train, fg_gt:outputs_gt_train, learning_rate:1e-3, batch_size:FLAGS.train_batch_size})
-            elif iter <= 500:
-                train_step.run({frame_and_bg:inputs_train, fg_gt:outputs_gt_train, learning_rate:1e-4, batch_size:FLAGS.train_batch_size})
+            elif iter <= FLAGS.max_iteration - 1000:
+                train_step.run({frame_and_bg:inputs_train, fg_gt:outputs_gt_train, learning_rate:0.5e-3, batch_size:FLAGS.train_batch_size})
             else:
-                train_step.run({frame_and_bg:inputs_train, fg_gt:outputs_gt_train, learning_rate:1e-5, batch_size:FLAGS.train_batch_size})
+                train_step.run({frame_and_bg:inputs_train, fg_gt:outputs_gt_train, learning_rate:1e-4, batch_size:FLAGS.train_batch_size})
             # print training loss and test loss
             if iter%10 == 0:
                 summary_train = sess.run(summary, {frame_and_bg:inputs_train, fg_gt:outputs_gt_train, batch_size:FLAGS.train_batch_size})
@@ -250,7 +250,7 @@ if __name__ == '__main__':
         final_test = 0
         for i in range(5):
             inputs_test, outputs_gt_test = build_img_pair(sess.run(test_batch))
-            final_test = final_test + cross_entropy.eval({frame_and_bg:inputs_test, fg_gt:outputs_gt_test, batch_size:FLAGS.test_batch_size, p_keep:1.})
+            final_test = final_test + cross_entropy.eval({frame_and_bg:inputs_test, fg_gt:outputs_gt_test, batch_size:FLAGS.test_batch_size})
         final_test = final_test / 5.
         print("final test loss %f" % final_test)
         coord.request_stop()
