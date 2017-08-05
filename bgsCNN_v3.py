@@ -20,6 +20,17 @@ def conv2d(x, W):
 def deconv2d(x, W, output_shape, strides):
 	return tf.nn.conv2d_transpose(x, W, output_shape = output_shape, strides = strides, padding = 'VALID')
 
+def pool3d(x, ksize, strides, mode):
+    x_pool = tf.transpose(x, perm=[0,3,1,2])
+    x_pool = tf.expand_dims(x_pool, 4)
+    if mode == 'avg':
+        x_pool = tf.nn.avg_pool3d(x_pool, ksize, strides, 'VALID')
+    if mode == 'max':
+        x_pool = tf.nn.max_pool3d(x_pool, ksize, strides, 'VALID')
+    x_pool = tf.squeeze(x_pool, [4])
+    x_pool = tf.transpose(x_pool, perm=[0,2,3,1])
+    return x_pool
+
 def read_tfrecord(tf_filename, image_size):
     filename_queue = tf.train.string_input_producer([tf_filename])
     reader = tf.TFRecordReader()
@@ -92,11 +103,7 @@ if __name__ == '__main__':
 
     with tf.name_scope("feature_reduction"):
         # shape: 21X21X51
-        net = tf.transpose(net, perm=[0,3,1,2])
-        net = tf.expand_dims(net, 4)
-        net = tf.nn.avg_pool3d(net, [1,48,1,1,1], [1,40,1,1,1], 'VALID')
-        net = tf.squeeze(net, [4])
-        net = tf.transpose(net, perm=[0,2,3,1])
+        net = pool3d(net, [1,48,1,1,1], [1,40,1,1,1], 'avg')
 
     with tf.name_scope("deconv_1"):
         # shape: 43X43X32
@@ -111,11 +118,7 @@ if __name__ == '__main__':
 
     with tf.name_scope("deconv_1_max_pooling"):
         # shape: 41X41X16
-        deconv_1_pool = tf.transpose(deconv_1, perm=[0,3,1,2])
-        deconv_1_pool = tf.expand_dims(deconv_1_pool, 4)
-        deconv_1_pool = tf.nn.max_pool3d(deconv_1_pool, [1,2,3,3,1], [1,2,1,1,1], 'VALID')
-        deconv_1_pool = tf.squeeze(deconv_1_pool, [4])
-        deconv_1_pool = tf.transpose(deconv_1_pool, perm=[0,2,3,1])
+        deconv_1_pool = pool3d(deconv_1, [1,2,3,3,1], [1,2,1,1,1], 'max')
         tf.summary.image("channel1", tf.slice(deconv_1_pool, [0,0,0,0],[-1,41,41,1]), max_outputs=3)
         tf.summary.image("channel2", tf.slice(deconv_1_pool, [0,0,0,1],[-1,41,41,1]), max_outputs=3)
         tf.summary.image("channel3", tf.slice(deconv_1_pool, [0,0,0,2],[-1,41,41,1]), max_outputs=3)
