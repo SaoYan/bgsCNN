@@ -43,18 +43,21 @@ def prepare_data(height, width):
             begin = int(line[0]); end = int(line[1])
             num = begin
             roi_filename = "dataset/" + dirname_l0 + "/ROI.bmp"
-            roi_img = cv2.resize(cv2.imread(roi_filename), (width, height), interpolation = cv2.INTER_CUBIC)
-            idx = (roi_img == 0)
+            roi_img = cv2.imread(roi_filename)
             while num <= end:
                 frame_filename = "dataset/" + dirname_l0 + "/input/" + num2filename(num, "in") + ".jpg"
                 bg_filename = "dataset/" + dirname_l0 + "/bg/" + num2filename(num, "bg") + ".jpg"
                 gt_filename = "dataset/" + dirname_l0 + "/groundtruth/" + num2filename(num, "gt") + ".png"
-                frame = cv2.resize(cv2.imread(frame_filename), (width, height), interpolation = cv2.INTER_CUBIC)
-                bg_model = cv2.resize(cv2.imread(bg_filename), (width, height), interpolation = cv2.INTER_CUBIC)
-                gt_mask = cv2.resize(cv2.imread(gt_filename), (width, height), interpolation = cv2.INTER_CUBIC)
+                frame = cv2.imread(frame_filename)
+                frame[roi_img == 0] = 0
+                frame = cv2.resize(frame, (width, height), interpolation = cv2.INTER_CUBIC)
+                bg_model = cv2.imread(bg_filename)
+                bg_model[roi_img == 0] = 0
+                bg_model = cv2.resize(bg_model, (width, height), interpolation = cv2.INTER_CUBIC)
+                gt_mask = cv2.imread(gt_filename)
+                gt_mask[(gt_mask != 0) & (gt_mask != 255)] = 0
+                gt_mask = cv2.resize(gt_mask, (width, height), interpolation = cv2.INTER_CUBIC)
                 if (gt_mask == 255).any():
-                    frame[idx] = 0
-                    bg_model[idx] = 0
                     gt = gt_mask[:,:,0]
                     gt = np.expand_dims(gt, axis = 2)
                     data_cube = np.uint8(np.concatenate([frame, bg_model, gt], 2))

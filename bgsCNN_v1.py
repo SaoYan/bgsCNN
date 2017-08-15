@@ -1,5 +1,5 @@
 # from generate_bg import generate_bg
-# from prepare_data import prepare_data
+from prepare_data import prepare_data
 
 import time
 import numpy as np
@@ -8,7 +8,7 @@ from tensorflow.contrib.slim.nets import resnet_v2
 from tensorflow.contrib import slim
 
 # generate_bg()
-# total_num_train, total_num_test = prepare_data(321, 321)
+total_num_train, total_num_test = prepare_data(321, 321)
 
 def weight(shape, name):
 	initial = tf.truncated_normal(shape, mean=0.0, stddev=0.1, dtype=tf.float32)
@@ -42,8 +42,6 @@ def build_img_pair(img_batch):
         input_norm = (input_cast - input_min) / (input_max - input_min)
 
         gt = img_batch[i,:,:,6]
-        idx = ((gt != 0) & (gt != 255))
-        gt[idx] = 0
         gt_cast = gt.astype(dtype = np.float32)
         gt_min = np.amin(gt_cast)
         gt_max = np.amax(gt_cast)
@@ -133,7 +131,7 @@ if __name__ == '__main__':
         tf.summary.image("channel3", tf.slice(conv_1, [0,0,0,2],[-1,321,321,1]), max_outputs=3)
         tf.summary.image("channel4", tf.slice(conv_1, [0,0,0,3],[-1,321,321,1]), max_outputs=3)
 
-    with tf.name_scope("conv_1"):
+    with tf.name_scope("conv_2"):
         # shape: 321X321X1
         W_conv2 = weight([1, 1, 4, 1], "weights")
         conv_2 = conv2d(conv_1, W_conv2)

@@ -50,13 +50,6 @@ def generate_bg():
                     gt_filename = "dataset/" + dirname_l0 + "/groundtruth/" + num2filename(num, "gt") + ".png"
                     frame = cv2.imread(frame_filename)
                     gt = cv2.imread(gt_filename)
-                    if type(frame == None) == bool:
-                        if frame == None:
-                            print ("finish with " + dirname_l0)
-                            break
-                    elif (frame == None).all():
-                        print ("finish with " + dirname_l0 + "\n")
-                        break
                     check = (frame[:,:,0] == frame[:,:,1])
                     if check.all():
                         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -75,5 +68,8 @@ def generate_bg():
                         bg_filename = "dataset/" + dirname_l0 + "/bg/" + num2filename(num, "bg") + ".jpg"
                         cv2.imwrite(bg_filename, bg_model)
                     num = num + 1
+                    if num > end:
+                        print ("finish with " + dirname_l0)
+                        break
                     cv2.waitKey(20)
                 os.makedirs("dataset/" + dirname_l0 + "/done")
