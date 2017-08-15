@@ -12,7 +12,7 @@ You can find the details about my model in the following two reports:
   constructing TFrecords files for preparation of training the model
 * bgsCNN_v*.py  
   training the model  
-  v1 ~ v3 respectively correspond to Model I ~ III mentioned in the second report.
+  v1 ~ v3 respectively correspond to Model I ~ III mentioned in the second report; experiments on v4 have not finished yet
 
 ## How to run
 
