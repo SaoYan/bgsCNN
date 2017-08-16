@@ -24,7 +24,6 @@ def read_tfrecord(tf_filename, image_size):
     filename_queue = tf.train.string_input_producer([tf_filename])
     reader = tf.TFRecordReader()
     __, serialized_example = reader.read(filename_queue)
-
     feature={ 'image_raw': tf.FixedLenFeature([], tf.string) }
     features = tf.parse_single_example(serialized_example, features=feature)
     image = tf.decode_raw(features['image_raw'], tf.uint8)
@@ -40,13 +39,11 @@ def build_img_pair(img_batch):
         input_min = np.amin(input_cast)
         input_max = np.amax(input_cast)
         input_norm = (input_cast - input_min) / (input_max - input_min)
-
         gt = img_batch[i,:,:,6]
         gt_cast = gt.astype(dtype = np.float32)
         gt_min = np.amin(gt_cast)
         gt_max = np.amax(gt_cast)
         gt_norm = (gt_cast - gt_min) / (gt_max - gt_min)
-
         inputs[i,:,:,:] = input_norm
         outputs_gt[i,:,:,0] = gt_norm
     return inputs, outputs_gt
