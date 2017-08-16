@@ -22,13 +22,39 @@ You can find the details about my model in the following two reports:
 * [bgslibrary](https://github.com/andrewssobral/bgslibrary) (needed only if you want to run generate_bg.py yourself)
 
 ### 2. Run the code
-You can choose one from bgsCNN_v*.py and run it directly.  
-***ATTENTION***  
-If you've downloaded the data I provided and don't need to run generate_bg.py, comment out the two corresponding lines.
+Suppose we use bgsCNN_v2
+* If you want to run both generate_bg.py and prepare_data.py (trust me, you don't want to run generate_bg.py yourself!):
 ```
-# from generate_bg import generate_bg
+python train.py \
+  --generate_bg True \
+  --prepare_data True  \
+  --dataset_dir dataset \
+  --log_dir logs \
+  --model_version 2 \
+  --train_batch_size 40 \
+  --test_batch_size 200 \
+  --max_iteration 10000 \
 ```
-AND
+* If you've downloaded the dataset I provided and don't need to run generate_bg.py (suppose the downloaded data is stored in directory "dataset"):
 ```
-# generate_bg()
+python train.py \
+  --prepare_data True  \
+  --dataset_dir dataset \
+  --log_dir logs \
+  --model_version 2 \
+  --train_batch_size 40 \
+  --test_batch_size 200 \
+  --max_iteration 10000 \
+```
+* If you've already had the TFrecords files and don't want to tun prepare_data.py (suppose the two TFrecords files are train.tfrecords & test.tfrecords):
+```
+python train.py \
+  --prepare_data False  \
+  --train_file train.tfrecords \
+  --test_file test.tfrecords \
+  --log_dir logs \
+  --model_version 2 \
+  --train_batch_size 40 \
+  --test_batch_size 200 \
+  --max_iteration 10000 \
 ```

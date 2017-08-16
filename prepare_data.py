@@ -31,23 +31,23 @@ def num2filename(num, prefix):
 def _bytes_feature(value):
     return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
 
-def prepare_data(height, width):
+def prepare_data(root_dir, height, width):
     total_num_train = 0; total_num_test = 0
     train_writer = tf.python_io.TFRecordWriter("train.tfrecords")
     test_writer  = tf.python_io.TFRecordWriter("test.tfrecords")
-    for __, dirnames_l0, __ in walklevel("dataset", level = 0):
+    for __, dirnames_l0, __ in walklevel(root_dir, level = 0):
         for dirname_l0 in dirnames_l0:
             print ("start dealing with " + dirname_l0)
-            F = open("dataset/" + dirname_l0 + "/temporalROI.txt", 'r')
+            F = open(root_dir + "/" + dirname_l0 + "/temporalROI.txt", 'r')
             line  = F.read().split(' ')
             begin = int(line[0]); end = int(line[1])
             num = begin
-            roi_filename = "dataset/" + dirname_l0 + "/ROI.bmp"
+            roi_filename = root_dir + "/" + dirname_l0 + "/ROI.bmp"
             roi_img = cv2.imread(roi_filename)
             while num <= end:
-                frame_filename = "dataset/" + dirname_l0 + "/input/" + num2filename(num, "in") + ".jpg"
-                bg_filename = "dataset/" + dirname_l0 + "/bg/" + num2filename(num, "bg") + ".jpg"
-                gt_filename = "dataset/" + dirname_l0 + "/groundtruth/" + num2filename(num, "gt") + ".png"
+                frame_filename = root_dir + "/" + dirname_l0 + "/input/" + num2filename(num, "in") + ".jpg"
+                bg_filename = root_dir + "/" + dirname_l0 + "/bg/" + num2filename(num, "bg") + ".jpg"
+                gt_filename = root_dir + "/" + dirname_l0 + "/groundtruth/" + num2filename(num, "gt") + ".png"
                 frame = cv2.imread(frame_filename)
                 frame[roi_img == 0] = 0
                 frame = cv2.resize(frame, (width, height), interpolation = cv2.INTER_CUBIC)
@@ -73,7 +73,5 @@ def prepare_data(height, width):
                     print("add data for frame # " + str(num))
                 num = num + 1
             print ("finish dealing with " + dirname_l0 + "\n")
-
     print ("total # of training samples: " + str(total_num_train))
     print ("total # of test samples: " + str(total_num_test))
-    return total_num_train, total_num_test

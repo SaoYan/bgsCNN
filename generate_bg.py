@@ -28,26 +28,26 @@ def num2filename(num, prefix):
     else:
         return prefix + str(num)
 
-def generate_bg():
+def generate_bg(root_dir):
     cv2.namedWindow("frame")
     cv2.namedWindow("foregrond mask")
     cv2.namedWindow("groundtruth")
     cv2.namedWindow("background model")
-    for __, dirnames_l0, __ in walklevel("dataset", level = 0):
+    for __, dirnames_l0, __ in walklevel(root_dir, level = 0):
         for dirname_l0 in dirnames_l0:
-            if not os.path.exists("dataset/" + dirname_l0 + "/done") or os.path.isfile("dataset/" + dirname_l0 + "/done"):
+            if not os.path.exists(root_dir + "/" + dirname_l0 + "/done") or os.path.isfile(root_dir + "/" + dirname_l0 + "/done"):
                 print ("start dealing with " + dirname_l0)
-                if not os.path.exists("dataset/" + dirname_l0 + "/bg") or os.path.isfile("dataset/" + dirname_l0 + "/bg"):
-                    os.makedirs("dataset/" + dirname_l0 + "/bg")
+                if not os.path.exists(root_dir + "/" + dirname_l0 + "/bg") or os.path.isfile(root_dir + "/" + dirname_l0 + "/bg"):
+                    os.makedirs(root_dir + "/" + dirname_l0 + "/bg")
                 num = 1
                 bgs = libbgs.SuBSENSE()
-                F = open("dataset/" + dirname_l0 + "/temporalROI.txt", 'r')
+                F = open(root_dir + "/" + dirname_l0 + "/temporalROI.txt", 'r')
                 line  = F.read().split(' ')
                 begin = int(line[0]); end = int(line[1])
-                ROI_mask = cv2.imread("dataset/" + dirname_l0 + "/ROI.bmp")
+                ROI_mask = cv2.imread(root_dir + "/" + dirname_l0 + "/ROI.bmp")
                 while True:
-                    frame_filename = "dataset/" + dirname_l0 + "/input/" + num2filename(num, "in") + ".jpg"
-                    gt_filename = "dataset/" + dirname_l0 + "/groundtruth/" + num2filename(num, "gt") + ".png"
+                    frame_filename = root_dir + "/" + dirname_l0 + "/input/" + num2filename(num, "in") + ".jpg"
+                    gt_filename = root_dir + "/" + dirname_l0 + "/groundtruth/" + num2filename(num, "gt") + ".png"
                     frame = cv2.imread(frame_filename)
                     gt = cv2.imread(gt_filename)
                     check = (frame[:,:,0] == frame[:,:,1])
@@ -65,11 +65,11 @@ def generate_bg():
                     cv2.imshow("groundtruth", gt)
                     cv2.imshow("background model", bg_model)
                     if (num >= begin) & (num <= end):
-                        bg_filename = "dataset/" + dirname_l0 + "/bg/" + num2filename(num, "bg") + ".jpg"
+                        bg_filename = root_dir + "/" + dirname_l0 + "/bg/" + num2filename(num, "bg") + ".jpg"
                         cv2.imwrite(bg_filename, bg_model)
                     num = num + 1
                     if num > end:
                         print ("finish with " + dirname_l0)
                         break
                     cv2.waitKey(20)
-                os.makedirs("dataset/" + dirname_l0 + "/done")
+                os.makedirs(root_dir + "/" + dirname_l0 + "/done")
