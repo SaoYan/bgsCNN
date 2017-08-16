@@ -1,5 +1,4 @@
-# VehicleCounting_DL
-In this project I try to perform background subtraction using deep learning method.  
+# Background Subtraction Using Deep Learning Method 
 You can find the details about my model in the following two reports:  
 1. [Background Subtraction Using Deep Learning--Part I](https://saoyan.github.io/DL-background-subtraction-1/)
 2. [Background Subtraction Using Deep Learning--Part II](https://saoyan.github.io/DL-background-subtraction-2/)
