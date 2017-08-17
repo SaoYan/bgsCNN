@@ -1,4 +1,4 @@
-# Background Subtraction Using Deep Learning Method 
+# Background Subtraction Using Deep Learning Method
 You can find the details about my model in the following two reports:  
 1. [Background Subtraction Using Deep Learning--Part I](https://saoyan.github.io/DL-background-subtraction-1/)
 2. [Background Subtraction Using Deep Learning--Part II](https://saoyan.github.io/DL-background-subtraction-2/)
@@ -33,7 +33,7 @@ python train.py \
   --model_version 2 \ ten
   --train_batch_size 40 \
   --test_batch_size 200 \
-  --max_iteration 10000 \
+  --max_iteration 10000
 ```
 * If you've downloaded the dataset I provided and don't need to run generate_bg.py (suppose the downloaded data is stored in directory "dataset"):
 ```
@@ -44,7 +44,7 @@ python train.py \
   --model_version 2 \
   --train_batch_size 40 \
   --test_batch_size 200 \
-  --max_iteration 10000 \
+  --max_iteration 10000
 ```
 * If you've already had the TFrecords files and don't want to tun prepare_data.py (suppose the two TFrecords files are train.tfrecords & test.tfrecords):
 ```
@@ -56,5 +56,5 @@ python train.py \
   --model_version 2 \
   --train_batch_size 40 \
   --test_batch_size 200 \
-  --max_iteration 10000 \
+  --max_iteration 10000
 ```
