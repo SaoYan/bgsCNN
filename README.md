@@ -11,7 +11,7 @@ You can find the details about my model in the following two reports:
   constructing TFrecords files for preparation of training the model
 * bgsCNN_v*.py  
   training the model  
-  v1 ~ v3 respectively correspond to Model I ~ III mentioned in the second report; experiments on v4 have not finished yet
+  v1 ~ v3 respectively correspond to Model I ~ III mentioned in the second report; v4 hasn't been included in reports yet
 
 ## How to run
 
@@ -22,7 +22,12 @@ You can find the details about my model in the following two reports:
 * Downloaded Checkpoint file of ResNet_V2_50 from [Tensorflow Model Zoo](https://github.com/tensorflow/models/tree/master/slim), and put resnet_v2_50.ckpt at the same directory as Python script files.
 
 ### 2. Run the code
-Suppose we use bgsCNN_v2
+***
+**NOTE**  
+If you use bgsCNN_v1~v2, set the image_height & image_width as multiples of 32 plus 1, e.g. 321.  
+If you use bgsCNN_v4, set the image_height & image_width as multiples of 32, e.g. 320.
+***
+In the following demos, suppose we use bgsCNN_v2.
 * If you want to run both generate_bg.py and prepare_data.py (trust me, you don't want to run generate_bg.py yourself!):
 ```
 python train.py \
@@ -30,7 +35,9 @@ python train.py \
   --prepare_data True  \
   --dataset_dir dataset \
   --log_dir logs \
-  --model_version 2 \ ten
+  --model_version 2 \
+  --image_height 321 \
+  --image_width 321 \
   --train_batch_size 40 \
   --test_batch_size 200 \
   --max_iteration 10000
@@ -42,6 +49,8 @@ python train.py \
   --dataset_dir dataset \
   --log_dir logs \
   --model_version 2 \
+  --image_height 321 \
+  --image_width 321 \
   --train_batch_size 40 \
   --test_batch_size 200 \
   --max_iteration 10000
@@ -54,6 +63,8 @@ python train.py \
   --test_file test.tfrecords \
   --log_dir logs \
   --model_version 2 \
+  --image_height 321 \
+  --image_width 321 \
   --train_batch_size 40 \
   --test_batch_size 200 \
   --max_iteration 10000
