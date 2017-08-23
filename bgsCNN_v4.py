@@ -121,15 +121,21 @@ class bgsCNN_v4:
         tf.summary.image("channel3", tf.slice(unpool_5, [0,0,0,2],[-1,320,320,1]), max_outputs=3, family="unpool5")
         tf.summary.image("channel4", tf.slice(unpool_5, [0,0,0,3],[-1,320,320,1]), max_outputs=3, family="unpool5")
         # final result
-        deconv_final = slim.conv2d_transpose(unpool_5, 1, [3, 3], scope='final_result',
+        deconv_final = slim.conv2d_transpose(unpool_5, 1, [3, 3], scope='deconv_final',
             biases_initializer=None, activation_fn=None, variables_collections=self.variables_collections)
         output = tf.nn.sigmoid(deconv_final)
         result = 255 * tf.cast(output + 0.5, tf.uint8)
-        tf.summary.image("deconv_final", deconv_final, max_outputs=3, family="final_result")
+        tf.summary.image("deconv_final", deconv_final, max_outputs=3, family="deconv_final")
         tf.summary.image("sigmoid_out", output, max_outputs=3, family="final_result")
         tf.summary.image("segmentation", result, max_outputs=3, family="final_result")
         self.logits = deconv_final
         self.sigmoid_out = output
+        collections = ops.get_collection("weights")
+        for collection in collections:
+            L = collection.name.split('/')
+            name = L[-2] + '/' + L[-1]
+            family = L[0]
+            tf.summary.histogram(name=name, values=collection, family=family)
 
     def build_loss(self):
         with tf.name_scope("evaluation"):
@@ -166,7 +172,7 @@ class bgsCNN_v4:
             test_writer  = tf.summary.FileWriter(self.log_dir + "/test", sess.graph)
             coord = tf.train.Coordinator()
             threads = tf.train.start_queue_runners(sess=sess, coord=coord)
-            inputs_test, outputs_gt_test = build_img_pair(sess.run(train_batch))
+            inputs_test, outputs_gt_test = build_img_pair(sess.run(test_batch))
             for iter in range(self.max_iteration):
                 inputs_train, outputs_gt_train = build_img_pair(sess.run(train_batch))
                 # train with dynamic learning rate
