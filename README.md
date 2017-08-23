@@ -2,6 +2,7 @@
 You can find the details about my model in the following two reports:  
 1. [Background Subtraction Using Deep Learning--Part I](https://saoyan.github.io/DL-background-subtraction-1/)
 2. [Background Subtraction Using Deep Learning--Part II](https://saoyan.github.io/DL-background-subtraction-2/)  
+
 A poster is also available.
 [JPG version](https://saoyan.github.io/assets/images/bgsCNN_2/poster.jpg)  
 [PDF version](https://saoyan.github.io/assets/poster.pdf)
