@@ -3,6 +3,7 @@ import tensorflow as tf
 from bgsCNN_v1 import bgsCNN_v1
 from bgsCNN_v2 import bgsCNN_v2
 from bgsCNN_v3 import bgsCNN_v3
+from bgsCNN_v4 import bgsCNN_v4
 from generate_bg import generate_bg
 from prepare_data import prepare_data
 
@@ -26,7 +27,7 @@ tf.app.flags.DEFINE_integer("image_depth", 7, "depth of inputs")
 def main(_):
     # check FLAGS
     if FLAGS.generate_bg:
-        generate_bg(FLAGS.dataset_dir)
+        generate_bg()
     if FLAGS.prepare_data:
         prepare_data(FLAGS.dataset_dir, FLAGS.image_height, FLAGS.image_width)
         FLAGS.train_file = "train.tfrecords"
@@ -53,8 +54,13 @@ def main(_):
                         train_batch_size=FLAGS.train_batch_size, test_batch_size=FLAGS.test_batch_size,
                         max_iteration=FLAGS.max_iteration,
                         image_height=FLAGS.image_height, image_width=FLAGS.image_width, image_depth=FLAGS.image_depth)
+    elif FLAGS.model_version == 4:
+        model = bgsCNN_v4(train_file=FLAGS.train_file, test_file=FLAGS.test_file, log_dir=FLAGS.log_dir,
+                        train_batch_size=FLAGS.train_batch_size, test_batch_size=FLAGS.test_batch_size,
+                        max_iteration=FLAGS.max_iteration,
+                        image_height=FLAGS.image_height, image_width=FLAGS.image_width, image_depth=FLAGS.image_depth)
     else:
-        print("The model version is not supported. Please choose from 1 to 3")
+        print("The model version is not supported. Please choose from 1 to 4")
     # run training
     model.train()
 
