@@ -34,10 +34,13 @@ def main(_):
         FLAGS.test_file = "test.tfrecords"
     if (not FLAGS.prepare_data) & (FLAGS.train_file == ""):
         print("please specify the tfrecords file for training data")
+        return
     if (not FLAGS.prepare_data) & (FLAGS.test_file == ""):
         print("please specify the tfrecords file for test data")
+        return
     if FLAGS.log_dir == "":
         print("please specify the directory of recording training logs")
+        return
     # build model
     if FLAGS.model_version == 1:
         model = bgsCNN_v1(train_file=FLAGS.train_file, test_file=FLAGS.test_file, log_dir=FLAGS.log_dir,
