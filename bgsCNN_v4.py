@@ -121,7 +121,7 @@ class bgsCNN_v4:
         deconv_5 = slim.repeat(unpool_4, 2, slim.conv2d_transpose, 64, [3, 3], scope='deconv5',
             weights_initializer=initializers.xavier_initializer(uniform=False),
             biases_initializer=None, activation_fn=None, variables_collections=self.variables_collections)
-        deconv_5 = slim.batch_norm(deconv_5, is_training=self.is_training, scope=batch_norm_5')
+        deconv_5 = slim.batch_norm(deconv_5, is_training=self.is_training, scope='batch_norm_5')
         tf.summary.image("channel1", tf.slice(deconv_5, [0,0,0,0],[-1,160,160,1]), max_outputs=3, family="deconv5")
         tf.summary.image("channel2", tf.slice(deconv_5, [0,0,0,1],[-1,160,160,1]), max_outputs=3, family="deconv5")
         tf.summary.image("channel3", tf.slice(deconv_5, [0,0,0,2],[-1,160,160,1]), max_outputs=3, family="deconv5")
