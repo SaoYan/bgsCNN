@@ -38,24 +38,19 @@ def vgg_16(inputs,
         # Collect outputs for conv2d, fully_connected and max_pool2d.
         with slim.arg_scope([slim.conv2d, slim.fully_connected, slim.max_pool2d],
                         outputs_collections=end_points_collection):
-            net = slim.repeat(inputs, 2, slim.conv2d, 64, [3, 3], scope='conv1',
-                            weights_initializer=initializers.xavier_initializer(uniform=False), biases_initializer=None,
+            net = slim.repeat(inputs, 2, slim.conv2d, 64, [3, 3], scope='conv1', biases_initializer=None,
                             activation_fn=None, variables_collections=variables_collections)
             net, argmax_1 = tf.nn.max_pool_with_argmax(net, [1,2,2,1], [1,2,2,1], padding='VALID', name='pool1')
-            net = slim.repeat(net, 2, slim.conv2d, 128, [3, 3], scope='conv2',
-                            weights_initializer=initializers.xavier_initializer(uniform=False), biases_initializer=None,
+            net = slim.repeat(net, 2, slim.conv2d, 128, [3, 3], scope='conv2', biases_initializer=None,
                             activation_fn=None, variables_collections=variables_collections)
             net, argmax_2 = tf.nn.max_pool_with_argmax(net, [1,2,2,1], [1,2,2,1], padding='VALID', name='pool2')
-            net = slim.repeat(net, 3, slim.conv2d, 256, [3, 3], scope='conv3',
-                            weights_initializer=initializers.xavier_initializer(uniform=False), biases_initializer=None,
+            net = slim.repeat(net, 3, slim.conv2d, 256, [3, 3], scope='conv3', biases_initializer=None,
                             activation_fn=None, variables_collections=variables_collections)
             net, argmax_3 = tf.nn.max_pool_with_argmax(net, [1,2,2,1], [1,2,2,1], padding='VALID', name='pool3')
-            net = slim.repeat(net, 3, slim.conv2d, 512, [3, 3], scope='conv4',
-                            weights_initializer=initializers.xavier_initializer(uniform=False), biases_initializer=None,
+            net = slim.repeat(net, 3, slim.conv2d, 512, [3, 3], scope='conv4', biases_initializer=None,
                             activation_fn=None, variables_collections=variables_collections)
             net, argmax_4 = tf.nn.max_pool_with_argmax(net, [1,2,2,1], [1,2,2,1], padding='VALID', name='pool4')
-            net = slim.repeat(net, 3, slim.conv2d, 512, [3, 3], scope='conv5',
-                            weights_initializer=initializers.xavier_initializer(uniform=False), biases_initializer=None,
+            net = slim.repeat(net, 3, slim.conv2d, 512, [3, 3], scope='conv5', biases_initializer=None,
                             activation_fn=None, variables_collections=variables_collections)
             net, argmax_5 = tf.nn.max_pool_with_argmax(net, [1,2,2,1], [1,2,2,1], padding='VALID', name='pool5')
             # Convert end_points_collection into a end_point dict.
@@ -104,8 +99,7 @@ def build_img_pair(img_batch):
         input_min = np.amin(input_cast)
         input_max = np.amax(input_cast)
         input_norm = (input_cast - input_min) / (input_max - input_min)
-        gt = img_batch[i,:,:,6]
-        gt_cast = gt.astype(dtype = np.float32)
+        gt_cast = img_batch[i,:,:,6].astype(dtype = np.float32)
         gt_min = np.amin(gt_cast)
         gt_max = np.amax(gt_cast)
         gt_norm = (gt_cast - gt_min) / (gt_max - gt_min)
