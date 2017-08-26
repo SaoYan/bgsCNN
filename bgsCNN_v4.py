@@ -179,8 +179,8 @@ class bgsCNN_v4:
         init_fn = slim.assign_from_checkpoint_fn("vgg_16.ckpt", slim.get_model_variables('vgg_16'))
         saver = tf.train.Saver()
         with self.session as sess:
-            init_fn(sess)
             sess.run(init)
+            init_fn(sess)
             train_writer = tf.summary.FileWriter(self.log_dir + "/train", sess.graph)
             test_writer  = tf.summary.FileWriter(self.log_dir + "/test", sess.graph)
             coord = tf.train.Coordinator()
