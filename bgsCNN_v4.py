@@ -61,7 +61,7 @@ class bgsCNN_v4:
         deconv_1 = slim.repeat(net, 3, slim.conv2d_transpose, 512, [3, 3], scope='deconv1',
             weights_initializer=initializers.xavier_initializer(uniform=False),
             biases_initializer=None, activation_fn=None, variables_collections=self.variables_collections)
-        # deconv_1 = slim.batch_norm(deconv_1, is_training=self.is_training, scope='batch_norm_1')
+        deconv_1 = slim.batch_norm(deconv_1, decay=0.9, is_training=self.is_training, scope='batch_norm_1')
         tf.summary.image("channel1", tf.slice(deconv_1, [0,0,0,0],[-1,10,10,1]), max_outputs=3, family="deconv1")
         tf.summary.image("channel2", tf.slice(deconv_1, [0,0,0,1],[-1,10,10,1]), max_outputs=3, family="deconv1")
         tf.summary.image("channel3", tf.slice(deconv_1, [0,0,0,2],[-1,10,10,1]), max_outputs=3, family="deconv1")
@@ -76,7 +76,7 @@ class bgsCNN_v4:
         deconv_2 = slim.repeat(unpool_1, 3, slim.conv2d_transpose, 512, [3, 3], scope='deconv2',
             weights_initializer=initializers.xavier_initializer(uniform=False),
             biases_initializer=None, activation_fn=None, variables_collections=self.variables_collections)
-        # deconv_2 = slim.batch_norm(deconv_2, is_training=self.is_training, scope='batch_norm_2')
+        deconv_2 = slim.batch_norm(deconv_2, decay=0.9, is_training=self.is_training, scope='batch_norm_2')
         tf.summary.image("channel1", tf.slice(deconv_2, [0,0,0,0],[-1,20,20,1]), max_outputs=3, family="deconv2")
         tf.summary.image("channel2", tf.slice(deconv_2, [0,0,0,1],[-1,20,20,1]), max_outputs=3, family="deconv2")
         tf.summary.image("channel3", tf.slice(deconv_2, [0,0,0,2],[-1,20,20,1]), max_outputs=3, family="deconv2")
@@ -91,7 +91,7 @@ class bgsCNN_v4:
         deconv_3 = slim.repeat(unpool_2, 3, slim.conv2d_transpose, 256, [3, 3], scope='deconv3',
             weights_initializer=initializers.xavier_initializer(uniform=False),
             biases_initializer=None, activation_fn=None, variables_collections=self.variables_collections)
-        # deconv_3 = slim.batch_norm(deconv_3, is_training=self.is_training, scope='batch_norm_3')
+        deconv_3 = slim.batch_norm(deconv_3, decay=0.9, is_training=self.is_training, scope='batch_norm_3')
         tf.summary.image("channel1", tf.slice(deconv_3, [0,0,0,0],[-1,40,40,1]), max_outputs=3, family="deconv3")
         tf.summary.image("channel2", tf.slice(deconv_3, [0,0,0,1],[-1,40,40,1]), max_outputs=3, family="deconv3")
         tf.summary.image("channel3", tf.slice(deconv_3, [0,0,0,2],[-1,40,40,1]), max_outputs=3, family="deconv3")
@@ -106,7 +106,7 @@ class bgsCNN_v4:
         deconv_4 = slim.repeat(unpool_3, 2, slim.conv2d_transpose, 128, [3, 3], scope='deconv4',
             weights_initializer=initializers.xavier_initializer(uniform=False),
             biases_initializer=None, activation_fn=None, variables_collections=self.variables_collections)
-        # deconv_4 = slim.batch_norm(deconv_4, is_training=self.is_training, scope='batch_norm_4')
+        deconv_4 = slim.batch_norm(deconv_4, decay=0.9, is_training=self.is_training, scope='batch_norm_4')
         tf.summary.image("channel1", tf.slice(deconv_4, [0,0,0,0],[-1,80,80,1]), max_outputs=3, family="deconv4")
         tf.summary.image("channel2", tf.slice(deconv_4, [0,0,0,1],[-1,80,80,1]), max_outputs=3, family="deconv4")
         tf.summary.image("channel3", tf.slice(deconv_4, [0,0,0,2],[-1,80,80,1]), max_outputs=3, family="deconv4")
@@ -121,7 +121,7 @@ class bgsCNN_v4:
         deconv_5 = slim.repeat(unpool_4, 2, slim.conv2d_transpose, 64, [3, 3], scope='deconv5',
             weights_initializer=initializers.xavier_initializer(uniform=False),
             biases_initializer=None, activation_fn=None, variables_collections=self.variables_collections)
-        # deconv_5 = slim.batch_norm(deconv_5, is_training=self.is_training, scope='batch_norm_5')
+        deconv_5 = slim.batch_norm(deconv_5, decay=0.9, is_training=self.is_training, scope='batch_norm_5')
         tf.summary.image("channel1", tf.slice(deconv_5, [0,0,0,0],[-1,160,160,1]), max_outputs=3, family="deconv5")
         tf.summary.image("channel2", tf.slice(deconv_5, [0,0,0,1],[-1,160,160,1]), max_outputs=3, family="deconv5")
         tf.summary.image("channel3", tf.slice(deconv_5, [0,0,0,2],[-1,160,160,1]), max_outputs=3, family="deconv5")
