@@ -133,7 +133,7 @@ class bgsCNN_v3:
                     num_threads = 2,
                     min_after_dequeue = 300)
         init = tf.global_variables_initializer()
-        init_fn = slim.assign_from_checkpoint_fn("CNN_models/resnet_v2_50.ckpt", slim.get_model_variables('resnet_v2'))
+        init_fn = slim.assign_from_checkpoint_fn("resnet_v2_50.ckpt", slim.get_model_variables('resnet_v2'))
         saver = tf.train.Saver()
         with self.session as sess:
             sess.run(init)
