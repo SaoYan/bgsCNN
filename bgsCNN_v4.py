@@ -138,13 +138,13 @@ class bgsCNN_v4:
         conv_final = slim.conv2d(unpool_5, 1, [3, 3], scope='conv_final',
             weights_initializer=initializers.variance_scaling_initializer(factor=1.0, mode='FAN_AVG'),
             biases_initializer=None, activation_fn=None, variables_collections=self.variables_collections)
-        # deconv_final = slim.batch_norm(deconv_final, decay=0.9, is_training=self.is_training, scope='batch_norm_final')
-        output = tf.nn.sigmoid(deconv_final)
+        # conv_final = slim.batch_norm(conv_final, decay=0.9, is_training=self.is_training, scope='batch_norm_final')
+        output = tf.nn.sigmoid(conv_final)
         result = 255 * tf.cast(output + 0.5, tf.uint8)
-        tf.summary.image("deconv_final", deconv_final, max_outputs=3, family="deconv_final")
+        tf.summary.image("conv_final", conv_final, max_outputs=3, family="conv_final")
         tf.summary.image("sigmoid_out", output, max_outputs=3, family="final_result")
         tf.summary.image("segmentation", result, max_outputs=3, family="final_result")
-        self.logits = deconv_final
+        self.logits = conv_final
         self.sigmoid_out = output
         collections = ops.get_collection("weights")
         for collection in collections:
