@@ -54,6 +54,7 @@ class bgsCNN_v4:
                 is_training = self.is_training,
                 spatial_squeeze = False,
                 variables_collections = self.variables_collections)
+            net = slim.batch_norm(net, is_training=self.is_training)
         tf.summary.image("channel1", tf.slice(net, [0,0,0,0],[-1,10,10,1]), max_outputs=3, family="vgg_16")
         tf.summary.image("channel2", tf.slice(net, [0,0,0,1],[-1,10,10,1]), max_outputs=3, family="vgg_16")
         tf.summary.image("channel3", tf.slice(net, [0,0,0,2],[-1,10,10,1]), max_outputs=3, family="vgg_16")

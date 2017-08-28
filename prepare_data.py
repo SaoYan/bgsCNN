@@ -57,6 +57,7 @@ def prepare_data(root_dir, height, width):
                 gt_mask = cv2.imread(gt_filename)
                 gt_mask[(gt_mask != 0) & (gt_mask != 255)] = 0
                 gt_mask = cv2.resize(gt_mask, (width, height), interpolation = cv2.INTER_CUBIC)
+                gt_mask[gt_mask!= 255] = 255
                 if (gt_mask == 255).any():
                     gt = gt_mask[:,:,0]
                     gt = np.expand_dims(gt, axis = 2)
