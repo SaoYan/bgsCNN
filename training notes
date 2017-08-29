@@ -1,5 +1,0 @@
-1. VGG16 with ReLU, with biases; deconv without ReLU, without biases:
-VGG16输出的feature map过于稀疏；过拟合严重
-2. VGG16 without ReLU, with biases; deconv without ReLU, without biases:
-No!
-3. VGG16 with ReLU, with biases; deconv without ReLU, with biases; dropout in conv_final:

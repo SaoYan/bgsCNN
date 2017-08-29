@@ -3,30 +3,7 @@ import cv2
 import libbgs
 import os
 import os.path
-
-def walklevel(some_dir, level):
-    some_dir = some_dir.rstrip(os.path.sep)
-    assert os.path.isdir(some_dir)
-    num_sep = some_dir.count(os.path.sep)
-    for root, dirs, files in os.walk(some_dir):
-        yield root, dirs, files
-        num_sep_this = root.count(os.path.sep)
-        if num_sep + level <= num_sep_this:
-            del dirs[:]
-
-def num2filename(num, prefix):
-    if num < 10:
-        return prefix + "00000" + str(num)
-    elif num < 100:
-        return prefix + "0000" + str(num)
-    elif num < 1000:
-        return prefix + "000" + str(num)
-    elif num < 10000:
-        return prefix + "00" + str(num)
-    elif num < 100000:
-        return prefix + "0" + str(num)
-    else:
-        return prefix + str(num)
+from utilities import *
 
 def generate_bg(root_dir):
     cv2.namedWindow("frame")
