@@ -27,7 +27,7 @@ tf.app.flags.DEFINE_integer("image_depth", 7, "depth of inputs")
 def main(_):
     # check FLAGS
     if FLAGS.generate_bg:
-        generate_bg()
+        generate_bg(FLAGS.dataset_dir)
     if FLAGS.prepare_data:
         prepare_data(FLAGS.dataset_dir, FLAGS.image_height, FLAGS.image_width)
         FLAGS.train_file = "train.tfrecords"

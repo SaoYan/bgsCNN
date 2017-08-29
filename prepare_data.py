@@ -27,7 +27,7 @@ def prepare_data(root_dir, height, width):
                 gt_filename = root_dir + "/" + dirname_l0 + "/groundtruth/" + num2filename(num, "gt") + ".png"
                 gt_mask = cv2.imread(gt_filename)
                 flag = (gt_mask==0) | (gt_mask==255)
-                if flag.any()
+                if flag.any():
                     frame = cv2.imread(frame_filename)
                     frame[roi_img == 0] = 0
                     frame = cv2.resize(frame, (width, height), interpolation = cv2.INTER_CUBIC)

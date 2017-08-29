@@ -25,6 +25,9 @@ def generate_bg(root_dir):
                 while True:
                     frame_filename = root_dir + "/" + dirname_l0 + "/input/" + num2filename(num, "in") + ".jpg"
                     gt_filename = root_dir + "/" + dirname_l0 + "/groundtruth/" + num2filename(num, "gt") + ".png"
+                    if not os.path.isfile(frame_filename):
+                        num = num + 1
+                        continue
                     frame = cv2.imread(frame_filename)
                     gt = cv2.imread(gt_filename)
                     check = (frame[:,:,0] == frame[:,:,1])
