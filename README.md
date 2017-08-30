@@ -26,7 +26,7 @@ A poster is also available.
 * Downloaded Checkpoint file of ResNet_V2_50 from [Tensorflow Model Zoo](https://github.com/tensorflow/models/tree/master/slim), and put resnet_v2_50.ckpt at the same directory as Python script files.
 * Downloaded Checkpoint file of vgg_16 from [Tensorflow Model Zoo](https://github.com/tensorflow/models/tree/master/slim), and put vgg_16.ckpt at the same directory as Python script files.
 
-### 2. Run the code
+### 2. Training
 ***
 **NOTE**  
 If you use bgsCNN_v1~v2, set the image_height & image_width as multiples of 32 plus 1, e.g. 321.  
@@ -73,4 +73,16 @@ python train.py \
   --train_batch_size 40 \
   --test_batch_size 200 \
   --max_iteration 10000
+```
+
+### 3. Testing
+When you've finished the training, you can evaluate the model on test to see average test loss. The logs of this test procedure will be in sub-directory ***"model_test"*** under your identified logs directory.
+```
+python test.py \
+  --test_file test.tfrecords \
+  --log_dir logs \
+  --model_version 2 \
+  --image_height 321 \
+  --image_width 321 \
+  --optimal_step 9600
 ```

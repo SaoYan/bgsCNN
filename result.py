@@ -1,8 +1,10 @@
 import cv2
 import numpy as np
+import tensorflow as tf
 import libbgs
 import os
 import os.path
+from utilities import *
 from bgsCNN_v1 import bgsCNN_v1
 from bgsCNN_v2 import bgsCNN_v2
 from bgsCNN_v3 import bgsCNN_v3
@@ -15,6 +17,7 @@ tf.app.flags.DEFINE_integer("image_depth", 7, "depth of inputs")
 tf.app.flags.DEFINE_integer("optimal_step", None, "# iteration step corresponding to the minimum test loss")
 tf.app.flags.DEFINE_integer("model_version", 2, "version number of the model; default as the best model(v2)")
 tf.app.flags.DEFINE_string("dataset_dir", "dataset2014", "directory of the original CDnet 2014 dataset")
+tf.app.flags.DEFINE_string("log_dir", "", "directory of recording training logs")
 
 def generate_results(out):
     # generate results for the whole dataset
@@ -24,7 +27,7 @@ def generate_results(out):
     saver = tf.train.Saver()
     flag = True
     with tf.Session() as sess:
-        saver.restore(sess, "logs/model.ckpt-" + str(FLAGS.optimal_step))
+        saver.restore(sess, FLAGS.log_dir + "/model.ckpt-" + str(FLAGS.optimal_step))
         for __, dirnames_l1, __ in walklevel(FLAGS.dataset_dir, level = 1):
             for dirname_l1 in dirnames_l1:
                 if (dirname_l1 != "dataset") & (dirname_l1 != "results"):
