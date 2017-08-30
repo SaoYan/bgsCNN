@@ -15,23 +15,29 @@ tf.app.flags.DEFINE_integer("image_depth", 7, "depth of inputs")
 tf.app.flags.DEFINE_integer("optimal_step", None, "# iteration step corresponding to the minimum test loss")
 tf.app.flags.DEFINE_integer("model_version", 2, "version number of the model; default as the best model(v2)")
 tf.app.flags.DEFINE_string("test_file", "", "tfrecords file for test data")
-tf.app.flags.DEFINE_string("log_dir", "", "directory of recording training logs")
+tf.app.flags.DEFINE_string("log_dir", "", "directory of training logs")
 
 def main(_):
     # check FLAGS
     if FLAGS.test_file == "":
         print("please specify the tfrecords file for test data")
         return
+    if FLAGS.log_dir == "":
+        print("please specify the directory of training logs")
+        return
+    if FLAGS.optimal_step == None:
+        print("please specify the iteration step corresponding to the minimum test loss")
+        return
     # the inference model
     if FLAGS.model_version == 1:
-        model = bgsCNN_v1(image_height=FLAGS.image_height, image_width=FLAGS.image_width, image_depth=FLAGS.image_depth)
+        model = bgsCNN_v1(image_height=FLAGS.image_height, image_width=FLAGS.image_width)
     elif FLAGS.model_version == 2:
-        model = bgsCNN_v2(image_height=FLAGS.image_height, image_width=FLAGS.image_width, image_depth=FLAGS.image_depth)
+        model = bgsCNN_v2(image_height=FLAGS.image_height, image_width=FLAGS.image_width)
     elif FLAGS.model_version == 3:
-        model = bgsCNN_v3(image_height=FLAGS.image_height, image_width=FLAGS.image_width, image_depth=FLAGS.image_depth)
+        model = bgsCNN_v3(image_height=FLAGS.image_height, image_width=FLAGS.image_width)
     elif FLAGS.model_version == 4:
-        model = bgsCNN_v4(image_height=FLAGS.image_height, image_width=FLAGS.image_width, image_depth=FLAGS.image_depth)
-    cross_entropy = model.cross_entropy
+        model = bgsCNN_v4(image_height=FLAGS.image_height, image_width=FLAGS.image_width)
+    # test on the whole test set
     img_size = [FLAGS.image_height, FLAGS.image_width, FLAGS.image_depth]
     saver = tf.train.Saver()
     test_batch = tf.train.shuffle_batch([read_tfrecord(test_file=FLAGS.test_file, img_size)],
@@ -39,7 +45,6 @@ def main(_):
                 capacity = 10*FLAGS.batch_size,
                 num_threads = 2,
                 min_after_dequeue = 5*FLAGS.batch_size)
-    summary = tf.summary.merge_all()
     test_writer  = tf.summary.FileWriter(FLAGS.log_dir + "/model_test", sess.graph)
     loss = 0.
     with tf.Session() as sess:
@@ -48,11 +53,14 @@ def main(_):
         saver.restore(sess, FLAGS.log_dir + "/model.ckpt-" + str(FLAGS.optimal_step))
         for i in range(500):
             inputs_test, outputs_gt_test = build_img_pair(sess.run(test_batch))
-            summary_test = sess.run(summary, {frame_and_bg:inputs_test, fg_gt:outputs_gt_test, batch_size:FLAGS.batch_size})
+            summary_test = sess.run(model.summary, {model.input_data:inputs_test, model.gt:outputs_gt_test, model.batch_size:FLAGS.batch_size})
             test_writer.add_summary(summary_test, i)
-            l = cross_entropy.eval({frame_and_bg:inputs_test, fg_gt:outputs_gt_test, batch_size:FLAGS.batch_size})
+            l = model.cross_entropy.eval({model.input_data:inputs_test, model.gt:outputs_gt_test, model.batch_size:FLAGS.batch_size})
             loss = loss + l
             print("test loss %d: %f" % (i+1, l))
         print("average loss on test set: %f" % (loss/200.))
         coord.request_stop()
         coord.join(threads)
+
+if __name__ == '__main__':
+    tf.app.run()

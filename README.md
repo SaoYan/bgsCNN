@@ -75,7 +75,7 @@ python train.py \
   --max_iteration 10000
 ```
 
-### 3. Testing
+### 3. Test on the test set
 When you've finished the training, you can evaluate the model on test to see average test loss. The logs of this test procedure will be in sub-directory ***"model_test"*** under your identified logs directory.
 ```
 python test.py \
@@ -84,5 +84,17 @@ python test.py \
   --model_version 2 \
   --image_height 321 \
   --image_width 321 \
+  --optimal_step 9600
+```
+
+### 4. Test on video
+You can also run the model on your own video.
+```
+python test_on_video.py \
+  --log_dir logs \
+  --model_version 2 \
+  --image_height 321 \
+  --image_width 321 \
+  --video_file test.mp4
   --optimal_step 9600
 ```

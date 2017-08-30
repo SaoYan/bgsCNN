@@ -33,7 +33,6 @@ class bgsCNN_v4:
             self.gt = tf.placeholder(tf.float32, [None, self.image_height, self.image_height, 1])
             self.learning_rate = tf.placeholder(tf.float32, [])
             self.batch_size = tf.placeholder(tf.int32, [])
-            self.is_training = tf.placeholder(tf.bool)
             frame = tf.slice(self.input_data, [0,0,0,0], [-1,self.image_height, self.image_height, 3])
             bg = tf.slice(self.input_data, [0,0,0,3], [-1,self.image_height, self.image_height, 3])
             tf.summary.image("frame", frame, max_outputs=3)
@@ -51,7 +50,6 @@ class bgsCNN_v4:
         with slim.arg_scope(vgg.vgg_arg_scope()):
             net, argmax, __ = vgg_16(
                 pre_conv,
-                is_training = self.is_training,
                 spatial_squeeze = False,
                 variables_collections = self.variables_collections)
         tf.summary.image("channel1", tf.slice(net, [0,0,0,0],[-1,10,10,1]), max_outputs=3, family="vgg_16")
@@ -195,30 +193,30 @@ class bgsCNN_v4:
                 inputs_train, outputs_gt_train = build_img_pair(sess.run(train_batch))
                 # train with dynamic learning rate
                 if iter <= 500:
-                    self.train_step.run({self.input_data:inputs_train, self.gt:outputs_gt_train, self.is_training:True,
+                    self.train_step.run({self.input_data:inputs_train, self.gt:outputs_gt_train,
                                     self.learning_rate:1e-4, self.batch_size:self.train_batch_size})
                 elif iter <= self.max_iteration - 1000:
-                    self.train_step.run({self.input_data:inputs_train, self.gt:outputs_gt_train, self.is_training:True,
+                    self.train_step.run({self.input_data:inputs_train, self.gt:outputs_gt_train,
                                     self.learning_rate:0.5e-4, self.batch_size:self.train_batch_size})
                 else:
-                    self.train_step.run({self.input_data:inputs_train, self.gt:outputs_gt_train, self.is_training:True,
+                    self.train_step.run({self.input_data:inputs_train, self.gt:outputs_gt_train,
                                     self.learning_rate:1e-5, self.batch_size:self.train_batch_size})
                 # print training loss and test loss
                 if iter%10 == 0:
                     summary_train = sess.run(self.summary, {self.input_data:inputs_train, self.gt:outputs_gt_train,
-                                             self.is_training:False, self.batch_size:self.train_batch_size})
+                                             self.batch_size:self.train_batch_size})
                     train_writer.add_summary(summary_train, iter)
                     train_writer.flush()
                     summary_test = sess.run(self.summary, {self.input_data:inputs_test, self.gt:outputs_gt_test,
-                                            self.is_training:False, self.batch_size:self.test_batch_size})
+                                            self.batch_size:self.test_batch_size})
                     test_writer.add_summary(summary_test, iter)
                     test_writer.flush()
                 # record training loss and test loss
                 if iter%10 == 0:
                     train_loss  = self.cross_entropy.eval({self.input_data:inputs_train, self.gt:outputs_gt_train,
-                                                    self.is_training:False, self.batch_size:self.train_batch_size})
+                                                    self.batch_size:self.train_batch_size})
                     test_loss   = self.cross_entropy.eval({self.input_data:inputs_test, self.gt:outputs_gt_test,
-                                                    self.is_training:False, self.batch_size:self.test_batch_size})
+                                                    self.batch_size:self.test_batch_size})
                     print("iter step %d trainning batch loss %f"%(iter, train_loss))
                     print("iter step %d test loss %f\n"%(iter, test_loss))
                 # record model

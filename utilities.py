@@ -26,7 +26,6 @@ def pool3d(x, ksize, strides, mode):
     return x_pool
 
 def vgg_16(inputs,
-           is_training=True,
            spatial_squeeze=True,
            variables_collections=None,
            scope='vgg_16'):

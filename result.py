@@ -13,17 +13,34 @@ from bgsCNN_v4 import bgsCNN_v4
 FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_integer("image_height", 321, "height of inputs")
 tf.app.flags.DEFINE_integer("image_width", 321, "width of inputs")
-tf.app.flags.DEFINE_integer("image_depth", 7, "depth of inputs")
 tf.app.flags.DEFINE_integer("optimal_step", None, "# iteration step corresponding to the minimum test loss")
 tf.app.flags.DEFINE_integer("model_version", 2, "version number of the model; default as the best model(v2)")
 tf.app.flags.DEFINE_string("dataset_dir", "dataset2014", "directory of the original CDnet 2014 dataset")
-tf.app.flags.DEFINE_string("log_dir", "", "directory of recording training logs")
+tf.app.flags.DEFINE_string("log_dir", "", "directory of training logs")
 
-def generate_results(out):
+def main(_):
+    # check FLAGS
+    if FLAGS.dataset_dir == "":
+        print("please specify the directory of the dataset")
+        return
+    if FLAGS.log_dir == "":
+        print("please specify the directory of training logs")
+        return
+    if FLAGS.optimal_step == None:
+        print("please specify the iteration step corresponding to the minimum test loss")
+        return
+    # the inference model
+    if FLAGS.model_version == 1:
+        model = bgsCNN_v1(image_height=FLAGS.image_height, image_width=FLAGS.image_width)
+    elif FLAGS.model_version == 2:
+        model = bgsCNN_v2(image_height=FLAGS.image_height, image_width=FLAGS.image_width)
+    elif FLAGS.model_version == 3:
+        model = bgsCNN_v3(image_height=FLAGS.image_height, image_width=FLAGS.image_width)
+    elif FLAGS.model_version == 4:
+        model = bgsCNN_v4(image_height=FLAGS.image_height, image_width=FLAGS.image_width)
     # generate results for the whole dataset
     cv2.namedWindow("frame")
     cv2.namedWindow("foreground mask")
-    img_size = [FLAGS.image_height, FLAGS.image_width, FLAGS.image_depth]
     saver = tf.train.Saver()
     flag = True
     with tf.Session() as sess:
@@ -67,14 +84,14 @@ def generate_results(out):
                                     data_cube = np.uint8(np.concatenate([frame, bg_model], 2))
                                     data_cube = np.expand_dims(data_cube, axis=0)
                                     # feed forward the CNN
-                                    CNN_out = sess.run(out, {frame_and_bg:data_cube})
+                                    CNN_out = sess.run(model.sigmoid_out, {model.input_data:data_cube})
                                     CNN_out = np.squeeze(CNN_out, axis=0)
                                     CNN_out = cv2.medianBlur(CNN_out, 3)
                                     result = np.zeros(CNN_out.shape, dtype=np.uint8)
                                     result[CNN_out >= 0.5] = 255
                                     result = cv2.resize(result, (original_size[1], original_size[0]))
-                                    result[result>10] = 255
-
+                                    result[result>=10] = 255
+                                    result[result<10] = 0
                                     # record the result
                                     result_file = result_dir + "/" + num2filename(num, "bin") + ".png"
                                     cv2.imwrite(result_file, result)
@@ -95,18 +112,6 @@ def generate_results(out):
                                 if flag:
                                     print("finish processing " + dirname_l2 + "\n")
                                     os.makedirs(src_dir + "/done")
-def main(_):
-    # the inference model
-    if FLAGS.model_version == 1:
-        model = bgsCNN_v1(image_height=FLAGS.image_height, image_width=FLAGS.image_width, image_depth=FLAGS.image_depth)
-    elif FLAGS.model_version == 2:
-        model = bgsCNN_v2(image_height=FLAGS.image_height, image_width=FLAGS.image_width, image_depth=FLAGS.image_depth)
-    elif FLAGS.model_version == 3:
-        model = bgsCNN_v3(image_height=FLAGS.image_height, image_width=FLAGS.image_width, image_depth=FLAGS.image_depth)
-    elif FLAGS.model_version == 4:
-        model = bgsCNN_v4(image_height=FLAGS.image_height, image_width=FLAGS.image_width, image_depth=FLAGS.image_depth)
-    out = model.sigmoid_out
-    generate_results(out)
 
 if __name__ == '__main__':
     tf.app.run()
