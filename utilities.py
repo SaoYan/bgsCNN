@@ -102,7 +102,10 @@ def build_img_pair(img_batch):
         gt_cast = img_batch[i,:,:,6].astype(dtype = np.float32)
         gt_min = np.amin(gt_cast)
         gt_max = np.amax(gt_cast)
-        gt_norm = (gt_cast - gt_min) / (gt_max - gt_min)
+        if gt_min != gt_max:
+            gt_norm = (gt_cast - gt_min) / (gt_max - gt_min)
+        else:
+            gt_norm = gt_cast
         inputs[i,:,:,:] = input_norm
         outputs_gt[i,:,:,0] = gt_norm
     return inputs, outputs_gt

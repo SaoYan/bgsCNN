@@ -40,14 +40,14 @@ def main(_):
     # test on the whole test set
     img_size = [FLAGS.image_height, FLAGS.image_width, FLAGS.image_depth]
     saver = tf.train.Saver()
-    test_batch = tf.train.shuffle_batch([read_tfrecord(test_file=FLAGS.test_file, img_size)],
+    test_batch = tf.train.shuffle_batch([read_tfrecord(FLAGS.test_file, img_size)],
                 batch_size = FLAGS.batch_size,
                 capacity = 10*FLAGS.batch_size,
                 num_threads = 2,
                 min_after_dequeue = 5*FLAGS.batch_size)
-    test_writer  = tf.summary.FileWriter(FLAGS.log_dir + "/model_test", sess.graph)
     loss = 0.
     with tf.Session() as sess:
+        test_writer  = tf.summary.FileWriter(FLAGS.log_dir + "/model_test", sess.graph)
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
         saver.restore(sess, FLAGS.log_dir + "/model.ckpt-" + str(FLAGS.optimal_step))
