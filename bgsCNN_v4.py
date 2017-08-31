@@ -7,7 +7,9 @@ from tensorflow.python.framework import ops
 from tensorflow.contrib.layers.python.layers import initializers
 
 class bgsCNN_v4:
-    def __init__(self, train_file, test_file, log_dir,
+    def __init__(self,
+                 train_file = "train.tfrecords", test_file = "test.tfrecords",
+                 log_dir = "logs",
                  train_batch_size = 40, test_batch_size  = 200,
                  max_iteration = 10000,
                  image_height = 320, image_width = 320, image_depth = 7):
@@ -20,7 +22,6 @@ class bgsCNN_v4:
         self.image_height = image_height
         self.image_width = image_width
         self.image_depth = image_depth
-        self.session = tf.Session()
         self.build_inputs()
         self.build_model()
         self.build_loss()
@@ -181,7 +182,7 @@ class bgsCNN_v4:
         init = tf.global_variables_initializer()
         init_fn = slim.assign_from_checkpoint_fn("vgg_16.ckpt", slim.get_model_variables('vgg_16'))
         saver = tf.train.Saver()
-        with self.session as sess:
+        with tf.Session() as sess:
             sess.run(init)
             init_fn(sess)
             train_writer = tf.summary.FileWriter(self.log_dir + "/train", sess.graph)

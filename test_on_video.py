@@ -60,6 +60,7 @@ def main(_):
             frame = cv2.resize(frame, (FLAGS.image_width,FLAGS.image_height), cv2.INTER_CUBIC)
             bg_model = cv2.resize(bg_model, (FLAGS.image_width,FLAGS.image_height), cv2.INTER_CUBIC)
             input_data = np.concatenate([frame, bg_model], 2)
+            input_data = np.expand_dims(input_data, 0)
             input_cast = input_data.astype(dtype = np.float32)
             input_min = np.amin(input_cast)
             input_max = np.amax(input_cast)
@@ -87,3 +88,6 @@ def main(_):
                     continue
             else:
                 continue
+
+if __name__ == '__main__':
+    tf.app.run()

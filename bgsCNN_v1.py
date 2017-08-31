@@ -5,7 +5,9 @@ from tensorflow.contrib.slim.nets import resnet_v2
 from tensorflow.contrib import slim
 
 class bgsCNN_v1:
-    def __init__(self, train_file, test_file, log_dir,
+    def __init__(self,
+                 train_file = "train.tfrecords", test_file = "test.tfrecords",
+                 log_dir = "logs",
                  train_batch_size = 40, test_batch_size  = 200,
                  max_iteration = 10000,
                  image_height = 321, image_width = 321, image_depth = 7):
@@ -18,7 +20,6 @@ class bgsCNN_v1:
         self.image_height = image_height
         self.image_width = image_width
         self.image_depth = image_depth
-        self.session = tf.Session()
         self.build_inputs()
         self.build_model()
         self.build_loss()
@@ -134,7 +135,7 @@ class bgsCNN_v1:
         init = tf.global_variables_initializer()
         init_fn = slim.assign_from_checkpoint_fn("resnet_v2_50.ckpt", slim.get_model_variables('resnet_v2'))
         saver = tf.train.Saver()
-        with self.session as sess:
+        with tf.Session() as sess:
             sess.run(init)
             init_fn(sess)
             train_writer = tf.summary.FileWriter(self.log_dir + "/train", sess.graph)
