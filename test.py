@@ -58,7 +58,7 @@ def main(_):
             l = model.cross_entropy.eval({model.input_data:inputs_test, model.gt:outputs_gt_test, model.batch_size:FLAGS.batch_size})
             loss = loss + l
             print("test loss %d: %f" % (i+1, l))
-        print("average loss on test set: %f" % (loss/200.))
+        print("average loss on test set: %f" % (loss/500.))
         coord.request_stop()
         coord.join(threads)
 
