@@ -6,7 +6,7 @@ from tensorflow.contrib import slim
 from tensorflow.python.framework import ops
 from tensorflow.contrib.layers.python.layers import initializers
 
-class bgsCNN_v4:
+class bgsCNN_v5:
     def __init__(self,
                  train_file = "train.tfrecords", test_file = "test.tfrecords",
                  log_dir = "logs",
@@ -30,113 +30,113 @@ class bgsCNN_v4:
 
     def build_inputs(self):
         with tf.name_scope("input_data"):
-            self.input_data = tf.placeholder(tf.float32, [None, self.image_height, self.image_height, 6])
+            self.frame = tf.placeholder(tf.float32, [None, self.image_height, self.image_height, 3])
+            self.bg = tf.placeholder(tf.float32, [None, self.image_height, self.image_height, 3])
             self.gt = tf.placeholder(tf.float32, [None, self.image_height, self.image_height, 1])
             self.learning_rate = tf.placeholder(tf.float32, [])
             self.batch_size = tf.placeholder(tf.int32, [])
-            self.is_training = tf.placeholder(tf.bool, [])
-            frame = tf.slice(self.input_data, [0,0,0,0], [-1,self.image_height, self.image_height, 3])
-            bg = tf.slice(self.input_data, [0,0,0,3], [-1,self.image_height, self.image_height, 3])
-            tf.summary.image("frame", frame, max_outputs=3)
-            tf.summary.image("background", bg, max_outputs=3)
+            tf.summary.image("frame", self.frame, max_outputs=3)
+            tf.summary.image("background", self.bg, max_outputs=3)
             tf.summary.image("groundtruth", self.gt, max_outputs=3)
 
     def build_model(self):
         self.variables_collections = {'weights':['weights'], 'biases':['biases']}
-        # pre_conv, output shape: 320X320X3
-        pre_conv = slim.conv2d(self.input_data, 3,[3,3], scope='pre_conv', biases_initializer=None,
-                            weights_initializer=initializers.xavier_initializer(uniform=False),
-                            activation_fn=None, variables_collections=self.variables_collections)
-        tf.summary.image("pre_conv_out", pre_conv, max_outputs=3, family="pre_conv")
         # vgg_16, output shape: 10X10X512
         with slim.arg_scope(vgg.vgg_arg_scope()):
-            net, argmax, __ = vgg_16(
-                pre_conv,
+            net1, __, __ = vgg_16(
+                self.frame,
                 spatial_squeeze = False,
                 variables_collections = self.variables_collections)
-        tf.summary.image("channel1", tf.slice(net, [0,0,0,0],[-1,10,10,1]), max_outputs=3, family="vgg_16")
-        tf.summary.image("channel2", tf.slice(net, [0,0,0,1],[-1,10,10,1]), max_outputs=3, family="vgg_16")
-        tf.summary.image("channel3", tf.slice(net, [0,0,0,2],[-1,10,10,1]), max_outputs=3, family="vgg_16")
-        tf.summary.image("channel4", tf.slice(net, [0,0,0,3],[-1,10,10,1]), max_outputs=3, family="vgg_16")
+            net2, __, __ = vgg_16(
+                self.bg,
+                spatial_squeeze = False,
+                reuse=True)
+        # feature merging, output shape: 10X10X512
+        merge = tf.concat([net1,net2], axis=3, name='merge')
+        merge = slim.conv2d(merge, 512, [3,3], scope='conv_merge', biases_initializer=None,
+            weights_initializer=initializers.xavier_initializer(uniform=False),
+            activation_fn=None, variables_collections=self.variables_collections)
+        tf.summary.image("channel1", tf.slice(merge, [0,0,0,0],[-1,10,10,1]), max_outputs=3, family="feature_merge")
+        tf.summary.image("channel2", tf.slice(merge, [0,0,0,1],[-1,10,10,1]), max_outputs=3, family="feature_merge")
+        tf.summary.image("channel3", tf.slice(merge, [0,0,0,2],[-1,10,10,1]), max_outputs=3, family="feature_merge")
+        tf.summary.image("channel4", tf.slice(merge, [0,0,0,3],[-1,10,10,1]), max_outputs=3, family="feature_merge")
         # deconv_1, output shape: 10X10X512
-        deconv_1 = slim.repeat(net, 3, slim.conv2d_transpose, 512, [3, 3], scope='deconv1',
+        deconv_1 = slim.repeat(merge, 3, slim.conv2d_transpose, 512, [3, 3], scope='deconv1',
             weights_initializer=initializers.xavier_initializer(uniform=False), biases_initializer=None,
             activation_fn=None, variables_collections=self.variables_collections)
         tf.summary.image("channel1", tf.slice(deconv_1, [0,0,0,0],[-1,10,10,1]), max_outputs=3, family="deconv1")
         tf.summary.image("channel2", tf.slice(deconv_1, [0,0,0,1],[-1,10,10,1]), max_outputs=3, family="deconv1")
         tf.summary.image("channel3", tf.slice(deconv_1, [0,0,0,2],[-1,10,10,1]), max_outputs=3, family="deconv1")
         tf.summary.image("channel4", tf.slice(deconv_1, [0,0,0,3],[-1,10,10,1]), max_outputs=3, family="deconv1")
-        # unpool_1, output shape: 20X20X512
-        unpool_1 = unpool(deconv_1, argmax[4], shape=[-1,20,20,512], scope='unpool1')
-        tf.summary.image("channel1", tf.slice(unpool_1, [0,0,0,0],[-1,20,20,1]), max_outputs=3, family="unpool1")
-        tf.summary.image("channel2", tf.slice(unpool_1, [0,0,0,1],[-1,20,20,1]), max_outputs=3, family="unpool1")
-        tf.summary.image("channel3", tf.slice(unpool_1, [0,0,0,2],[-1,20,20,1]), max_outputs=3, family="unpool1")
-        tf.summary.image("channel4", tf.slice(unpool_1, [0,0,0,3],[-1,20,20,1]), max_outputs=3, family="unpool1")
+        # upsample_1, output shape: 20X20X512
+        upsample_1 = upsample(deconv_1, scope='upsample1')
+        tf.summary.image("channel1", tf.slice(upsample_1, [0,0,0,0],[-1,20,20,1]), max_outputs=3, family="upsample1")
+        tf.summary.image("channel2", tf.slice(upsample_1, [0,0,0,1],[-1,20,20,1]), max_outputs=3, family="upsample1")
+        tf.summary.image("channel3", tf.slice(upsample_1, [0,0,0,2],[-1,20,20,1]), max_outputs=3, family="upsample1")
+        tf.summary.image("channel4", tf.slice(upsample_1, [0,0,0,3],[-1,20,20,1]), max_outputs=3, family="upsample1")
         # deconv_2, output shape: 20X20X512
-        deconv_2 = slim.repeat(unpool_1, 3, slim.conv2d_transpose, 512, [3, 3], scope='deconv2',
+        deconv_2 = slim.repeat(upsample_1, 3, slim.conv2d_transpose, 512, [3, 3], scope='deconv2',
             weights_initializer=initializers.xavier_initializer(uniform=False), biases_initializer=None,
             activation_fn=None, variables_collections=self.variables_collections)
         tf.summary.image("channel1", tf.slice(deconv_2, [0,0,0,0],[-1,20,20,1]), max_outputs=3, family="deconv2")
         tf.summary.image("channel2", tf.slice(deconv_2, [0,0,0,1],[-1,20,20,1]), max_outputs=3, family="deconv2")
         tf.summary.image("channel3", tf.slice(deconv_2, [0,0,0,2],[-1,20,20,1]), max_outputs=3, family="deconv2")
         tf.summary.image("channel4", tf.slice(deconv_2, [0,0,0,3],[-1,20,20,1]), max_outputs=3, family="deconv2")
-        # unpool_2, output shape: 40X40X512
-        unpool_2 = unpool(deconv_2, argmax[3], shape=[-1,40,40,512], scope='unpool2')
-        tf.summary.image("channel1", tf.slice(unpool_2, [0,0,0,0],[-1,40,40,1]), max_outputs=3, family="unpool2")
-        tf.summary.image("channel2", tf.slice(unpool_2, [0,0,0,1],[-1,40,40,1]), max_outputs=3, family="unpool2")
-        tf.summary.image("channel3", tf.slice(unpool_2, [0,0,0,2],[-1,40,40,1]), max_outputs=3, family="unpool2")
-        tf.summary.image("channel4", tf.slice(unpool_2, [0,0,0,3],[-1,40,40,1]), max_outputs=3, family="unpool2")
+        # upsample_2, output shape: 40X40X512
+        upsample_2 = upsample(deconv_2, scope='upsample2')
+        tf.summary.image("channel1", tf.slice(upsample_2, [0,0,0,0],[-1,40,40,1]), max_outputs=3, family="upsample2")
+        tf.summary.image("channel2", tf.slice(upsample_2, [0,0,0,1],[-1,40,40,1]), max_outputs=3, family="upsample2")
+        tf.summary.image("channel3", tf.slice(upsample_2, [0,0,0,2],[-1,40,40,1]), max_outputs=3, family="upsample2")
+        tf.summary.image("channel4", tf.slice(upsample_2, [0,0,0,3],[-1,40,40,1]), max_outputs=3, family="upsample2")
         # deconv_3, output shape: 40X40x256
-        deconv_3 = slim.repeat(unpool_2, 3, slim.conv2d_transpose, 256, [3, 3], scope='deconv3',
+        deconv_3 = slim.repeat(upsample_2, 3, slim.conv2d_transpose, 256, [3, 3], scope='deconv3',
             weights_initializer=initializers.xavier_initializer(uniform=False), biases_initializer=None,
             activation_fn=None, variables_collections=self.variables_collections)
         tf.summary.image("channel1", tf.slice(deconv_3, [0,0,0,0],[-1,40,40,1]), max_outputs=3, family="deconv3")
         tf.summary.image("channel2", tf.slice(deconv_3, [0,0,0,1],[-1,40,40,1]), max_outputs=3, family="deconv3")
         tf.summary.image("channel3", tf.slice(deconv_3, [0,0,0,2],[-1,40,40,1]), max_outputs=3, family="deconv3")
         tf.summary.image("channel4", tf.slice(deconv_3, [0,0,0,3],[-1,40,40,1]), max_outputs=3, family="deconv3")
-        # unpool_3, output shape: 80X80X256
-        unpool_3 = unpool(deconv_3, argmax[2],shape=[-1,80,80,256], scope='unpool3')
-        tf.summary.image("channel1", tf.slice(unpool_3, [0,0,0,0],[-1,80,80,1]), max_outputs=3, family="unpool3")
-        tf.summary.image("channel2", tf.slice(unpool_3, [0,0,0,1],[-1,80,80,1]), max_outputs=3, family="unpool3")
-        tf.summary.image("channel3", tf.slice(unpool_3, [0,0,0,2],[-1,80,80,1]), max_outputs=3, family="unpool3")
-        tf.summary.image("channel4", tf.slice(unpool_3, [0,0,0,3],[-1,80,80,1]), max_outputs=3, family="unpool3")
+        # upsample_3, output shape: 80X80X256
+        upsample_3 = upsample(deconv_3, scope='upsample3')
+        tf.summary.image("channel1", tf.slice(upsample_3, [0,0,0,0],[-1,80,80,1]), max_outputs=3, family="upsample3")
+        tf.summary.image("channel2", tf.slice(upsample_3, [0,0,0,1],[-1,80,80,1]), max_outputs=3, family="upsample3")
+        tf.summary.image("channel3", tf.slice(upsample_3, [0,0,0,2],[-1,80,80,1]), max_outputs=3, family="upsample3")
+        tf.summary.image("channel4", tf.slice(upsample_3, [0,0,0,3],[-1,80,80,1]), max_outputs=3, family="upsample3")
         # deconv_4, output shape: 80X80X128
-        deconv_4 = slim.repeat(unpool_3, 2, slim.conv2d_transpose, 128, [3, 3], scope='deconv4',
+        deconv_4 = slim.repeat(upsample_3, 2, slim.conv2d_transpose, 128, [3, 3], scope='deconv4',
             weights_initializer=initializers.xavier_initializer(uniform=False), biases_initializer=None,
             activation_fn=None, variables_collections=self.variables_collections)
         tf.summary.image("channel1", tf.slice(deconv_4, [0,0,0,0],[-1,80,80,1]), max_outputs=3, family="deconv4")
         tf.summary.image("channel2", tf.slice(deconv_4, [0,0,0,1],[-1,80,80,1]), max_outputs=3, family="deconv4")
         tf.summary.image("channel3", tf.slice(deconv_4, [0,0,0,2],[-1,80,80,1]), max_outputs=3, family="deconv4")
         tf.summary.image("channel4", tf.slice(deconv_4, [0,0,0,3],[-1,80,80,1]), max_outputs=3, family="deconv4")
-        # unpool_4, output shape: 160X160X128
-        unpool_4 = unpool(deconv_4, argmax[1], shape=[-1,160,160,128], scope='unpool4')
-        tf.summary.image("channel1", tf.slice(unpool_4, [0,0,0,0],[-1,160,160,1]), max_outputs=3, family="unpool4")
-        tf.summary.image("channel2", tf.slice(unpool_4, [0,0,0,1],[-1,160,160,1]), max_outputs=3, family="unpool4")
-        tf.summary.image("channel3", tf.slice(unpool_4, [0,0,0,2],[-1,160,160,1]), max_outputs=3, family="unpool4")
-        tf.summary.image("channel4", tf.slice(unpool_4, [0,0,0,3],[-1,160,160,1]), max_outputs=3, family="unpool4")
+        # upsample_4, output shape: 160X160X128
+        upsample_4 = upsample(deconv_4, scope='upsample4')
+        tf.summary.image("channel1", tf.slice(upsample_4, [0,0,0,0],[-1,160,160,1]), max_outputs=3, family="upsample4")
+        tf.summary.image("channel2", tf.slice(upsample_4, [0,0,0,1],[-1,160,160,1]), max_outputs=3, family="upsample4")
+        tf.summary.image("channel3", tf.slice(upsample_4, [0,0,0,2],[-1,160,160,1]), max_outputs=3, family="upsample4")
+        tf.summary.image("channel4", tf.slice(upsample_4, [0,0,0,3],[-1,160,160,1]), max_outputs=3, family="upsample4")
         # deconv_5, output shape: 160X160X64
-        deconv_5 = slim.repeat(unpool_4, 2, slim.conv2d_transpose, 64, [3, 3], scope='deconv5',
+        deconv_5 = slim.repeat(upsample_4, 2, slim.conv2d_transpose, 64, [3, 3], scope='deconv5',
             weights_initializer=initializers.xavier_initializer(uniform=False), biases_initializer=None,
             activation_fn=None, variables_collections=self.variables_collections)
         tf.summary.image("channel1", tf.slice(deconv_5, [0,0,0,0],[-1,160,160,1]), max_outputs=3, family="deconv5")
         tf.summary.image("channel2", tf.slice(deconv_5, [0,0,0,1],[-1,160,160,1]), max_outputs=3, family="deconv5")
         tf.summary.image("channel3", tf.slice(deconv_5, [0,0,0,2],[-1,160,160,1]), max_outputs=3, family="deconv5")
         tf.summary.image("channel4", tf.slice(deconv_5, [0,0,0,3],[-1,160,160,1]), max_outputs=3, family="deconv5")
-        # unpool_5, output shape: 320X320X64
-        unpool_5 = unpool(deconv_5, argmax[0],shape=[-1,320,320,64], scope='unpool5')
-        tf.summary.image("channel1", tf.slice(unpool_5, [0,0,0,0],[-1,320,320,1]), max_outputs=3, family="unpool5")
-        tf.summary.image("channel2", tf.slice(unpool_5, [0,0,0,1],[-1,320,320,1]), max_outputs=3, family="unpool5")
-        tf.summary.image("channel3", tf.slice(unpool_5, [0,0,0,2],[-1,320,320,1]), max_outputs=3, family="unpool5")
-        tf.summary.image("channel4", tf.slice(unpool_5, [0,0,0,3],[-1,320,320,1]), max_outputs=3, family="unpool5")
+        # upsample_5, output shape: 320X320X64
+        upsample_5 = upsample(deconv_5, scope='upsample5')
+        tf.summary.image("channel1", tf.slice(upsample_5, [0,0,0,0],[-1,320,320,1]), max_outputs=3, family="upsample5")
+        tf.summary.image("channel2", tf.slice(upsample_5, [0,0,0,1],[-1,320,320,1]), max_outputs=3, family="upsample5")
+        tf.summary.image("channel3", tf.slice(upsample_5, [0,0,0,2],[-1,320,320,1]), max_outputs=3, family="upsample5")
+        tf.summary.image("channel4", tf.slice(upsample_5, [0,0,0,3],[-1,320,320,1]), max_outputs=3, family="upsample5")
         # final result
-        conv = slim.conv2d(unpool_5, 64, [3,3], scope='conv1', biases_initializer=None,
+        conv = slim.conv2d(upsample_5, 64, [3,3], scope='conv1', biases_initializer=None,
             weights_initializer=initializers.xavier_initializer(uniform=False),
             activation_fn=None, variables_collections=self.variables_collections)
-        conv = slim.dropout(conv, keep_prob=0.8, is_training=self.is_training, scope='dropout1')
         conv = slim.conv2d(conv, 1, [3, 3], scope='conv2', biases_initializer=None,
             weights_initializer=initializers.xavier_initializer(uniform=False),
             activation_fn=None, variables_collections=self.variables_collections)
-        conv = slim.dropout(conv, keep_prob=0.8, is_training=self.is_training, scope='dropout2')
         output = tf.nn.sigmoid(conv)
         result = 255 * tf.cast(output + 0.5, tf.uint8)
         tf.summary.image("conv", conv, max_outputs=3, family="conv")
@@ -197,30 +197,30 @@ class bgsCNN_v4:
                 inputs_train, outputs_gt_train = build_img_pair(sess.run(train_batch))
                 # train with dynamic learning rate
                 if iter <= 500:
-                    self.train_step.run({self.input_data:inputs_train, self.gt:outputs_gt_train, self.is_training:True,
-                                    self.learning_rate:1e-4, self.batch_size:self.train_batch_size})
+                    self.train_step.run({self.frame:inputs_train[:,:,:,0:3], self.bg:inputs_train[:,:,:,3:6],
+                                    self.gt:outputs_gt_train, self.learning_rate:1e-4, self.batch_size:self.train_batch_size})
                 elif iter <= self.max_iteration - 1000:
-                    self.train_step.run({self.input_data:inputs_train, self.gt:outputs_gt_train, self.is_training:True,
-                                    self.learning_rate:0.5e-4, self.batch_size:self.train_batch_size})
+                    self.train_step.run({self.frame:inputs_train[:,:,:,0:3], self.bg:inputs_train[:,:,:,3:6],
+                                    self.gt:outputs_gt_train, self.learning_rate:0.5e-4, self.batch_size:self.train_batch_size})
                 else:
-                    self.train_step.run({self.input_data:inputs_train, self.gt:outputs_gt_train, self.is_training:True,
-                                    self.learning_rate:1e-5, self.batch_size:self.train_batch_size})
+                    self.train_step.run({self.frame:inputs_train[:,:,:,0:3], self.bg:inputs_train[:,:,:,3:6],
+                                    self.gt:outputs_gt_train, self.learning_rate:1e-5, self.batch_size:self.train_batch_size})
                 # print training loss and test loss
                 if iter%10 == 0:
-                    summary_train = sess.run(self.summary, {self.input_data:inputs_train, self.gt:outputs_gt_train,
-                                             self.is_training:False, self.batch_size:self.train_batch_size})
+                    summary_train = sess.run(self.summary, {self.frame:inputs_train[:,:,:,0:3], self.bg:inputs_train[:,:,:,3:6],
+                                             self.gt:outputs_gt_train, self.batch_size:self.train_batch_size})
                     train_writer.add_summary(summary_train, iter)
                     train_writer.flush()
-                    summary_test = sess.run(self.summary, {self.input_data:inputs_test, self.gt:outputs_gt_test,
-                                            self.is_training:False, self.batch_size:self.test_batch_size})
+                    summary_test = sess.run(self.summary, {self.frame:inputs_test[:,:,:,0:3], self.bg:inputs_test[:,:,:,3:6],
+                                            self.gt:outputs_gt_test, self.batch_size:self.test_batch_size})
                     test_writer.add_summary(summary_test, iter)
                     test_writer.flush()
                 # record training loss and test loss
                 if iter%10 == 0:
-                    train_loss  = self.cross_entropy.eval({self.input_data:inputs_train, self.gt:outputs_gt_train,
-                                                    self.is_training:False, self.batch_size:self.train_batch_size})
-                    test_loss   = self.cross_entropy.eval({self.input_data:inputs_test, self.gt:outputs_gt_test,
-                                                    self.is_training:False, self.batch_size:self.test_batch_size})
+                    train_loss  = self.cross_entropy.eval({self.frame:inputs_train[:,:,:,0:3], self.bg:inputs_train[:,:,:,3:6],
+                                                    self.gt:outputs_gt_train, self.batch_size:self.train_batch_size})
+                    test_loss   = self.cross_entropy.eval({self.frame:inputs_test[:,:,:,0:3], self.bg:inputs_test[:,:,:,3:6],
+                                                    self.gt:outputs_gt_test, self.batch_size:self.test_batch_size})
                     print("iter step %d trainning batch loss %f"%(iter, train_loss))
                     print("iter step %d test loss %f\n"%(iter, test_loss))
                 # record model

@@ -4,6 +4,7 @@ from bgsCNN_v1 import bgsCNN_v1
 from bgsCNN_v2 import bgsCNN_v2
 from bgsCNN_v3 import bgsCNN_v3
 from bgsCNN_v4 import bgsCNN_v4
+from bgsCNN_v5 import bgsCNN_v5
 from generate_bg import generate_bg
 from prepare_data import prepare_data
 
@@ -62,8 +63,13 @@ def main(_):
                         train_batch_size=FLAGS.train_batch_size, test_batch_size=FLAGS.test_batch_size,
                         max_iteration=FLAGS.max_iteration,
                         image_height=FLAGS.image_height, image_width=FLAGS.image_width, image_depth=FLAGS.image_depth)
+    elif FLAGS.model_version == 5:
+        model = bgsCNN_v5(train_file=FLAGS.train_file, test_file=FLAGS.test_file, log_dir=FLAGS.log_dir,
+                        train_batch_size=FLAGS.train_batch_size, test_batch_size=FLAGS.test_batch_size,
+                        max_iteration=FLAGS.max_iteration,
+                        image_height=FLAGS.image_height, image_width=FLAGS.image_width, image_depth=FLAGS.image_depth)
     else:
-        print("The model version is not supported. Please choose from 1 to 4")
+        print("The model version is not supported. Please choose from 1 to 5")
     # run training
     model.train()
 

@@ -28,7 +28,8 @@ def pool3d(x, ksize, strides, mode):
 def vgg_16(inputs,
            spatial_squeeze=True,
            variables_collections=None,
-           scope='vgg_16'):
+           scope='vgg_16',
+           reuse=None):
     """
     modification of vgg_16 in TF-slim
     see original code in https://github.com/tensorflow/models/blob/master/slim/nets/vgg.py
@@ -38,20 +39,20 @@ def vgg_16(inputs,
         # Collect outputs for conv2d, fully_connected and max_pool2d.
         with slim.arg_scope([slim.conv2d, slim.fully_connected, slim.max_pool2d],
                         outputs_collections=end_points_collection):
-            net = slim.repeat(inputs, 2, slim.conv2d, 64, [3, 3], scope='conv1',
-                            variables_collections=variables_collections)
+            net = slim.repeat(inputs, 2, slim.conv2d, 64, [3, 3], scope='conv1', biases_initializer=None,
+                            variables_collections=variables_collections, reuse=reuse)
             net, argmax_1 = tf.nn.max_pool_with_argmax(net, [1,2,2,1], [1,2,2,1], padding='VALID', name='pool1')
-            net = slim.repeat(net, 2, slim.conv2d, 128, [3, 3], scope='conv2',
-                            variables_collections=variables_collections)
+            net = slim.repeat(net, 2, slim.conv2d, 128, [3, 3], scope='conv2', biases_initializer=None,
+                            variables_collections=variables_collections, reuse=reuse)
             net, argmax_2 = tf.nn.max_pool_with_argmax(net, [1,2,2,1], [1,2,2,1], padding='VALID', name='pool2')
-            net = slim.repeat(net, 3, slim.conv2d, 256, [3, 3], scope='conv3',
-                            variables_collections=variables_collections)
+            net = slim.repeat(net, 3, slim.conv2d, 256, [3, 3], scope='conv3', biases_initializer=None,
+                            variables_collections=variables_collections, reuse=reuse)
             net, argmax_3 = tf.nn.max_pool_with_argmax(net, [1,2,2,1], [1,2,2,1], padding='VALID', name='pool3')
-            net = slim.repeat(net, 3, slim.conv2d, 512, [3, 3], scope='conv4',
-                            variables_collections=variables_collections)
+            net = slim.repeat(net, 3, slim.conv2d, 512, [3, 3], scope='conv4', biases_initializer=None,
+                            variables_collections=variables_collections, reuse=reuse)
             net, argmax_4 = tf.nn.max_pool_with_argmax(net, [1,2,2,1], [1,2,2,1], padding='VALID', name='pool4')
-            net = slim.repeat(net, 3, slim.conv2d, 512, [3, 3], scope='conv5',
-                            variables_collections=variables_collections)
+            net = slim.repeat(net, 3, slim.conv2d, 512, [3, 3], scope='conv5', biases_initializer=None,
+                            variables_collections=variables_collections, reuse=reuse)
             net, argmax_5 = tf.nn.max_pool_with_argmax(net, [1,2,2,1], [1,2,2,1], padding='VALID', name='pool5')
             # Convert end_points_collection into a end_point dict.
             end_points = slim.utils.convert_collection_to_dict(end_points_collection)
@@ -79,6 +80,17 @@ def unpool(pool, ind, shape, ksize=[1, 2, 2, 1], scope=None):
         ret = tf.reshape(ret, tf.stack(output_shape))
         ret = tf.reshape(ret, shape=shape)
         return ret
+
+def upsample(value, scope=None):
+    with tf.name_scope(scope):
+        sh = value.get_shape().as_list()
+        dim = len(sh[1:-1])
+        out = tf.reshape(value, [-1] + sh[-dim:])
+        for i in range(dim, 0, -1):
+            out = tf.concat([out, tf.zeros_like(out)], i)
+        out_size = [-1] + [s * 2 for s in sh[1:-1]] + [sh[-1]]
+        out = tf.reshape(out, out_size)
+        return out
 
 def read_tfrecord(tf_filename, image_size):
     filename_queue = tf.train.string_input_producer([tf_filename])
