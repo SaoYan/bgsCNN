@@ -111,7 +111,7 @@ def build_img_pair(img_batch):
     gt_cast = np.expand_dims(gt_cast, 3)
     gt_min = np.amin(gt_cast, axis=(1,2))
     gt_max = np.amax(gt_cast, axis=(1,2))
-    if gt_min != gt_max:
+    if (gt_min != gt_max).any():
         gt_norm = (gt_cast - gt_min) / (gt_max - gt_min)
     else:
         gt_norm = gt_cast
