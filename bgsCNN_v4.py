@@ -33,7 +33,6 @@ class bgsCNN_v4:
             self.input_data = tf.placeholder(tf.float32, [None, self.image_height, self.image_height, 6])
             self.gt = tf.placeholder(tf.float32, [None, self.image_height, self.image_height, 1])
             self.learning_rate = tf.placeholder(tf.float32, [])
-            self.batch_size = tf.placeholder(tf.int32, [])
             self.is_training = tf.placeholder(tf.bool, [])
             frame = tf.slice(self.input_data, [0,0,0,0], [-1,self.image_height, self.image_height, 3])
             bg = tf.slice(self.input_data, [0,0,0,3], [-1,self.image_height, self.image_height, 3])
@@ -128,7 +127,7 @@ class bgsCNN_v4:
         tf.summary.image("channel2", tf.slice(unpool_5, [0,0,0,1],[-1,320,320,1]), max_outputs=3, family="unpool5")
         tf.summary.image("channel3", tf.slice(unpool_5, [0,0,0,2],[-1,320,320,1]), max_outputs=3, family="unpool5")
         tf.summary.image("channel4", tf.slice(unpool_5, [0,0,0,3],[-1,320,320,1]), max_outputs=3, family="unpool5")
-        # final result
+        # conv, output shape: 320X320X1
         conv = slim.conv2d(unpool_5, 64, [3,3], scope='conv1', biases_initializer=None,
             weights_initializer=initializers.xavier_initializer(uniform=False),
             activation_fn=None, variables_collections=self.variables_collections)
@@ -137,11 +136,13 @@ class bgsCNN_v4:
             weights_initializer=initializers.xavier_initializer(uniform=False),
             activation_fn=None, variables_collections=self.variables_collections)
         conv = slim.dropout(conv, keep_prob=0.8, is_training=self.is_training, scope='dropout2')
-        output = tf.nn.sigmoid(conv)
-        result = 255 * tf.cast(output + 0.5, tf.uint8)
         tf.summary.image("conv", conv, max_outputs=3, family="conv")
-        tf.summary.image("sigmoid_out", output, max_outputs=3, family="final_result")
-        tf.summary.image("segmentation", result, max_outputs=3, family="final_result")
+        # final result
+        with tf.name_scope("result"):
+            output = tf.nn.sigmoid(conv)
+            result = 255 * tf.cast(output + 0.5, tf.uint8)
+            tf.summary.image("sigmoid_out", output, max_outputs=3)
+            tf.summary.image("segmentation", result, max_outputs=3)
         self.logits = conv
         self.output = output
         weights = ops.get_collection("weights")
@@ -192,29 +193,29 @@ class bgsCNN_v4:
                 # train with dynamic learning rate
                 if iter <= 500:
                     self.train_step.run({self.input_data:inputs_train, self.gt:outputs_gt_train, self.is_training:True,
-                                    self.learning_rate:1e-4, self.batch_size:self.train_batch_size})
+                                    self.learning_rate:1e-4})
                 elif iter <= self.max_iteration - 1000:
                     self.train_step.run({self.input_data:inputs_train, self.gt:outputs_gt_train, self.is_training:True,
-                                    self.learning_rate:0.5e-4, self.batch_size:self.train_batch_size})
+                                    self.learning_rate:0.5e-4})
                 else:
                     self.train_step.run({self.input_data:inputs_train, self.gt:outputs_gt_train, self.is_training:True,
-                                    self.learning_rate:1e-5, self.batch_size:self.train_batch_size})
+                                    self.learning_rate:1e-5})
                 # print training loss and test loss
                 if iter%10 == 0:
                     summary_train = sess.run(self.summary, {self.input_data:inputs_train, self.gt:outputs_gt_train,
-                                             self.is_training:False, self.batch_size:self.train_batch_size})
+                                             self.is_training:False})
                     train_writer.add_summary(summary_train, iter)
                     train_writer.flush()
                     summary_test = sess.run(self.summary, {self.input_data:inputs_test, self.gt:outputs_gt_test,
-                                            self.is_training:False, self.batch_size:self.test_batch_size})
+                                            self.is_training:False})
                     test_writer.add_summary(summary_test, iter)
                     test_writer.flush()
                 # record training loss and test loss
                 if iter%10 == 0:
                     train_loss  = self.cross_entropy.eval({self.input_data:inputs_train, self.gt:outputs_gt_train,
-                                                    self.is_training:False, self.batch_size:self.train_batch_size})
+                                                    self.is_training:False})
                     test_loss   = self.cross_entropy.eval({self.input_data:inputs_test, self.gt:outputs_gt_test,
-                                                    self.is_training:False, self.batch_size:self.test_batch_size})
+                                                    self.is_training:False})
                     print("iter step %d trainning batch loss %f"%(iter, train_loss))
                     print("iter step %d test loss %f\n"%(iter, test_loss))
                 # record model
