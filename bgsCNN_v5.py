@@ -31,16 +31,13 @@ class bgsCNN_v5:
     def build_inputs(self):
         with tf.name_scope("input_data"):
             self.input_data = tf.placeholder(tf.float32, [None, self.image_height, self.image_height, 6])
-            self.gt = tf.placeholder(tf.float32, [None, self.image_height, self.image_height, 2])
+            self.gt = tf.placeholder(tf.float32, [None, self.image_height, self.image_height, 1])
             self.learning_rate = tf.placeholder(tf.float32, [])
             frame = tf.slice(self.input_data, [0,0,0,0], [-1,self.image_height, self.image_height, 3])
             bg = tf.slice(self.input_data, [0,0,0,3], [-1,self.image_height, self.image_height, 3])
-            gt_1 = tf.slice(self.gt, [0,0,0,0], [-1,self.image_height, self.image_height, 1])
-            gt_2 = tf.slice(self.gt, [0,0,0,1], [-1,self.image_height, self.image_height, 1])
             tf.summary.image("frame", frame, max_outputs=3)
             tf.summary.image("background", bg, max_outputs=3)
-            tf.summary.image("groundtruth_channel1", gt_1, max_outputs=3)
-            tf.summary.image("groundtruth_channel2", gt_2, max_outputs=3)
+            tf.summary.image("groundtruth", self.gt, max_outputs=3)
 
     def build_model(self):
         self.variables_collections = {'weights':['weights'], 'biases':['biases']}
@@ -144,9 +141,8 @@ class bgsCNN_v5:
         tf.summary.image("channel2", conv_1, max_outputs=3, family="conv")
         # final result
         with tf.name_scope("result"):
-            output = tf.nn.softmax(conv, name='softmax')
-            pred = tf.argmax(output, axis=3, name='prediction')
-            pred = tf.expand_dims(pred, axis=3)
+            output = tf.nn.softmax(conv)
+            pred = tf.expand_dims(tf.argmax(output, axis=3), axis=3)
             result = 255 * tf.cast(pred, tf.uint8)
             tf.summary.image("segmentation", result, max_outputs=3)
         self.logits = conv
@@ -160,7 +156,8 @@ class bgsCNN_v5:
 
     def build_loss(self):
         with tf.name_scope("evaluation"):
-            self.cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels = self.gt, logits = self.logits))
+            self.cross_entropy = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(
+                    labels = tf.cast(tf.squeeze(self.gt,3),tf.int32), logits = self.logits))
             tf.summary.scalar("loss", self.cross_entropy)
 
     def build_optimizer(self):
@@ -193,9 +190,9 @@ class bgsCNN_v5:
             test_writer  = tf.summary.FileWriter(self.log_dir + "/test", sess.graph)
             coord = tf.train.Coordinator()
             threads = tf.train.start_queue_runners(sess=sess, coord=coord)
-            inputs_test, outputs_gt_test = build_img_pair(sess.run(test_batch),'softmax')
+            inputs_test, outputs_gt_test = build_img_pair(sess.run(test_batch))
             for iter in range(self.max_iteration):
-                inputs_train, outputs_gt_train = build_img_pair(sess.run(train_batch), 'softmax')
+                inputs_train, outputs_gt_train = build_img_pair(sess.run(train_batch))
                 # train with dynamic learning rate
                 if iter <= 500:
                     self.train_step.run({self.input_data:inputs_train, self.gt:outputs_gt_train, self.learning_rate:1e-4})

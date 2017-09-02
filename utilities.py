@@ -102,7 +102,7 @@ def read_tfrecord(tf_filename, image_size):
     image = tf.reshape(image, image_size)
     return image
 
-def build_img_pair(img_batch, mode='sigmoid'):
+def build_img_pair(img_batch):
     input_cast = img_batch[:,:,:,0:6].astype(dtype = np.float32)
     input_min = np.amin(input_cast, axis=(1,2))
     input_max = np.amax(input_cast, axis=(1,2))
@@ -115,10 +115,6 @@ def build_img_pair(img_batch, mode='sigmoid'):
         gt_norm = (gt_cast - gt_min) / (gt_max - gt_min)
     else:
         gt_norm = gt_cast
-    if mode == 'softmax':
-        temp = np.ones(gt_norm.shape, np.float32)
-        temp[gt_norm==1.] = 0.
-        gt_norm = np.concatenate([temp, gt_norm], axis=3)
     return input_norm, gt_norm
 
 def walklevel(some_dir, level):
