@@ -30,13 +30,15 @@ class bgsCNN_v5:
 
     def build_inputs(self):
         with tf.name_scope("input_data"):
-            self.frame = tf.placeholder(tf.float32, [None, self.image_height, self.image_height, 3])
-            self.bg = tf.placeholder(tf.float32, [None, self.image_height, self.image_height, 3])
-            self.gt = tf.placeholder(tf.float32, [None, self.image_height, self.image_height, 2])
+            self.input_data = tf.placeholder(tf.float32, [None, self.image_height, self.image_height, 6])
+            self.gt = tf.placeholder(tf.float32, [None, self.image_height, self.image_height, 1])
             self.learning_rate = tf.placeholder(tf.float32, [])
             self.batch_size = tf.placeholder(tf.int32, [])
-            tf.summary.image("frame", self.frame, max_outputs=3)
-            tf.summary.image("background", self.bg, max_outputs=3)
+            self.is_training = tf.placeholder(tf.bool, [])
+            frame = tf.slice(self.input_data, [0,0,0,0], [-1,self.image_height, self.image_height, 3])
+            bg = tf.slice(self.input_data, [0,0,0,3], [-1,self.image_height, self.image_height, 3])
+            tf.summary.image("frame", frame, max_outputs=3)
+            tf.summary.image("background", bg, max_outputs=3)
             tf.summary.image("groundtruth", self.gt, max_outputs=3)
 
     def build_model(self):
@@ -135,8 +137,8 @@ class bgsCNN_v5:
             weights_initializer=initializers.xavier_initializer(uniform=False),
             activation_fn=None, variables_collections=self.variables_collections)
         # conv = slim.dropout(conv, keep_prob=0.8, is_training=self.is_training, scope='dropout2')
-        output = tf.nn.softmax(conv)
-        pred = tf.argmax(softmax, axis=3)
+        output = tf.nn.softmax(conv, name='softmax')
+        pred = tf.argmax(output, axis=3, name='prediction')
         result = 255 * tf.cast(pred, tf.uint8)
         tf.summary.image("conv", conv, max_outputs=3, family="conv")
         tf.summary.image("segmentation", result, max_outputs=3, family="final_result")
