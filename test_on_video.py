@@ -66,7 +66,7 @@ def main(_):
             input_max = np.amax(input_cast)
             input_norm = (input_cast - input_min) / (input_max - input_min)
             # feed forward through CNN
-            output_img = sess.run(model.sigmoid_out, {model.input_data:input_norm, model.batch_size:1})
+            output_img = sess.run(model.output, {model.input_data:input_norm, model.batch_size:1})
             output_img = np.squeeze(output_img, axis=0)
             # post processing to get the final foregrond mask
             output_img = cv2.medianBlur(output_img, ksize = 3)

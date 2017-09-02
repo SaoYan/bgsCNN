@@ -143,19 +143,13 @@ class bgsCNN_v4:
         tf.summary.image("sigmoid_out", output, max_outputs=3, family="final_result")
         tf.summary.image("segmentation", result, max_outputs=3, family="final_result")
         self.logits = conv
-        self.sigmoid_out = output
+        self.output = output
         weights = ops.get_collection("weights")
-        biases  = ops.get_collection("biases")
         for weight in weights:
             L = weight.name.split('/')
             name = L[-2] + '/' + L[-1]
             family = L[0]
             tf.summary.histogram(name=name, values=weight, family=family)
-        for bias in biases:
-            L = bias.name.split('/')
-            name = L[-2] + '/' + L[-1]
-            family = L[0]
-            tf.summary.histogram(name=name, values=bias, family=family)
 
     def build_loss(self):
         with tf.name_scope("evaluation"):

@@ -84,7 +84,7 @@ def main(_):
                                     data_cube = np.uint8(np.concatenate([frame, bg_model], 2))
                                     data_cube = np.expand_dims(data_cube, axis=0)
                                     # feed forward the CNN
-                                    CNN_out = sess.run(model.sigmoid_out, {model.input_data:data_cube})
+                                    CNN_out = sess.run(model.output, {model.input_data:data_cube})
                                     CNN_out = np.squeeze(CNN_out, axis=0)
                                     CNN_out = cv2.medianBlur(CNN_out, 3)
                                     result = np.zeros(CNN_out.shape, dtype=np.uint8)

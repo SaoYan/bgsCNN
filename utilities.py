@@ -102,25 +102,23 @@ def read_tfrecord(tf_filename, image_size):
     image = tf.reshape(image, image_size)
     return image
 
-def build_img_pair(img_batch):
-    num = img_batch.shape[0]
-    inputs = np.ones([img_batch.shape[0], img_batch.shape[1], img_batch.shape[2], 6], dtype = np.float32)
-    outputs_gt = np.ones([img_batch.shape[0], img_batch.shape[1], img_batch.shape[2], 1], dtype = np.float32)
-    for i in range(num):
-        input_cast = img_batch[i,:,:,0:6].astype(dtype = np.float32)
-        input_min = np.amin(input_cast)
-        input_max = np.amax(input_cast)
-        input_norm = (input_cast - input_min) / (input_max - input_min)
-        gt_cast = img_batch[i,:,:,6].astype(dtype = np.float32)
-        gt_min = np.amin(gt_cast)
-        gt_max = np.amax(gt_cast)
-        if gt_min != gt_max:
-            gt_norm = (gt_cast - gt_min) / (gt_max - gt_min)
-        else:
-            gt_norm = gt_cast
-        inputs[i,:,:,:] = input_norm
-        outputs_gt[i,:,:,0] = gt_norm
-    return inputs, outputs_gt
+def build_img_pair(img_batch, model='sigmoid'):
+    input_cast = img_batch[:,:,:,0:6].astype(dtype = np.float32)
+    input_min = np.amin(input_cast, axis=(1,2))
+    input_max = np.amax(input_cast, axis=(1,2))
+    input_norm = (input_cast - input_min) / (input_max - input_min)
+    gt_cast = img_batch[:,:,:,6].astype(dtype = np.float32)
+    gt_min = np.amin(gt_cast, axis=(1,2))
+    gt_max = np.amax(gt_cast, axis=(1,2))
+    if gt_min != gt_max:
+        gt_norm = (gt_cast - gt_min) / (gt_max - gt_min)
+    else:
+        gt_norm = gt_cast
+    if model == 'softmax':
+        temp = np.ones(gt_norm.shape, np.float32)
+        temp[gt_norm==1.] = 0.
+        gt_norm = np.concatenate([temp, gt_norm], axis=3)
+    return input_norm, gt_norm
 
 def walklevel(some_dir, level):
     some_dir = some_dir.rstrip(os.path.sep)

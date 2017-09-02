@@ -105,7 +105,7 @@ class bgsCNN_v1:
             tf.summary.image("sigmoid_out", output, max_outputs=3)
             tf.summary.image("segmentation", result, max_outputs=3)
         self.logits = conv_2
-        self.sigmoid_out = output
+        self.output = output
 
     def build_loss(self):
         with tf.name_scope("evaluation"):
