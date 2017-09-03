@@ -31,13 +31,13 @@ class bgsCNN_v5:
     def build_inputs(self):
         with tf.name_scope("input_data"):
             self.input_data = tf.placeholder(tf.float32, [None, self.image_height, self.image_height, 6])
-            self.gt = tf.placeholder(tf.int32, [None, self.image_height, self.image_height, 1])
+            self.gt = tf.placeholder(tf.int32, [None, self.image_height, self.image_height])
             self.learning_rate = tf.placeholder(tf.float32, [])
             frame = tf.slice(self.input_data, [0,0,0,0], [-1,self.image_height, self.image_height, 3])
             bg = tf.slice(self.input_data, [0,0,0,3], [-1,self.image_height, self.image_height, 3])
             tf.summary.image("frame", frame, max_outputs=3)
             tf.summary.image("background", bg, max_outputs=3)
-            tf.summary.image("groundtruth", self.gt, max_outputs=3)
+            tf.summary.image("groundtruth", tf.cast(self.gt,tf.float32), max_outputs=3)
 
     def build_model(self):
         self.variables_collections = {'weights':['weights'], 'biases':['biases']}
@@ -157,7 +157,7 @@ class bgsCNN_v5:
     def build_loss(self):
         with tf.name_scope("evaluation"):
             self.cross_entropy = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(
-                    labels = tf.squeeze(self.gt,3), logits = self.logits))
+                    labels = self.gt, logits = self.logits))
             tf.summary.scalar("loss", self.cross_entropy)
 
     def build_optimizer(self):
