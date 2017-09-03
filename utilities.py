@@ -102,7 +102,7 @@ def read_tfrecord(tf_filename, image_size):
     image = tf.reshape(image, image_size)
     return image
 
-def build_img_pair(img_batch):
+def build_img_pair(img_batch, mode=None):
     input_cast = img_batch[:,:,:,0:6].astype(dtype = np.float32)
     input_min = np.amin(input_cast, axis=(1,2,3))
     input_max = np.amax(input_cast, axis=(1,2,3))
@@ -118,6 +118,8 @@ def build_img_pair(img_batch):
         gt_min = np.expand_dims(gt_min, i+1)
         gt_max = np.expand_dims(gt_max, i+1)
     gt_norm = (gt_cast - gt_min) / (gt_max - gt_min)
+    if mode == 'softmax':
+        gt_norm = gt_norm.astype(np.int32)
     return input_norm, gt_norm
 
 def walklevel(some_dir, level):
