@@ -104,17 +104,20 @@ def read_tfrecord(tf_filename, image_size):
 
 def build_img_pair(img_batch):
     input_cast = img_batch[:,:,:,0:6].astype(dtype = np.float32)
-    input_min = np.amin(input_cast, axis=(1,2))
-    input_max = np.amax(input_cast, axis=(1,2))
+    input_min = np.amin(input_cast, axis=(1,2,3))
+    input_max = np.amax(input_cast, axis=(1,2,3))
+    for i in range(3):
+        input_min = np.expand_dims(input_min, i+1)
+        input_max = np.expand_dims(input_max, i+1)
     input_norm = (input_cast - input_min) / (input_max - input_min)
     gt_cast = img_batch[:,:,:,6].astype(dtype = np.float32)
     gt_cast = np.expand_dims(gt_cast, 3)
-    gt_min = np.amin(gt_cast, axis=(1,2))
-    gt_max = np.amax(gt_cast, axis=(1,2))
-    if (gt_min != gt_max).any():
-        gt_norm = (gt_cast - gt_min) / (gt_max - gt_min)
-    else:
-        gt_norm = gt_cast
+    gt_min = np.amin(gt_cast, axis=(1,2,3))
+    gt_max = np.amax(gt_cast, axis=(1,2,3))
+    for i in range(3):
+        gt_min = np.expand_dims(gt_min, i+1)
+        gt_max = np.expand_dims(gt_max, i+1)
+    gt_norm = (gt_cast - gt_min) / (gt_max - gt_min)
     return input_norm, gt_norm
 
 def walklevel(some_dir, level):
