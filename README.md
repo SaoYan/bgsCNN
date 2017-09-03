@@ -3,7 +3,7 @@ You can find the details about my model in the following two reports:
 1. [Background Subtraction Using Deep Learning--Part I](https://saoyan.github.io/DL-background-subtraction-1/)
 2. [Background Subtraction Using Deep Learning--Part II](https://saoyan.github.io/DL-background-subtraction-2/)  
 
-A poster is also available.  
+A poster is also available. (The poster is only based on experiment results of v1~v3)  
 [JPG version](https://saoyan.github.io/assets/images/bgsCNN_2/poster.jpg)  
 [PDF version](https://saoyan.github.io/assets/poster.pdf)
 
@@ -15,7 +15,7 @@ A poster is also available.
   constructing TFrecords files for preparation of training the model
 * bgsCNN_v*.py  
   training the model  
-  v1 ~ v3 respectively correspond to Model I ~ III mentioned in the second report; v4 hasn't been included in reports yet
+  v1 ~ v3 respectively correspond to Model I ~ III mentioned in the second report; v4, v5 haven't been included in reports yet
 
 ## How to run
 
@@ -30,7 +30,7 @@ A poster is also available.
 ***
 **NOTE**  
 If you use bgsCNN_v1~v2, set the image_height & image_width as multiples of 32 plus 1, e.g. 321.  
-If you use bgsCNN_v4, set the image_height & image_width as multiples of 32, e.g. 320.
+If you use bgsCNN_v4~v5, set the image_height & image_width as multiples of 32, e.g. 320.
 ***
 In the following demos, suppose we use bgsCNN_v2.
 * If you want to run both generate_bg.py and prepare_data.py (trust me, you don't want to run generate_bg.py yourself!):
