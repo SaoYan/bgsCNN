@@ -162,7 +162,7 @@ class bgsCNN_v5:
             tf.summary.scalar("loss", self.cross_entropy)
 
     def build_optimizer(self):
-        with tf.name_scope('training_op'):
+        with tf.name_scope("training_op"):
             optimizer = tf.train.AdamOptimizer(learning_rate = self.learning_rate)
             self.train_step = optimizer.minimize(self.cross_entropy)
 
