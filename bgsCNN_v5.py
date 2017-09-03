@@ -35,9 +35,10 @@ class bgsCNN_v5:
             self.learning_rate = tf.placeholder(tf.float32, [])
             frame = tf.slice(self.input_data, [0,0,0,0], [-1,self.image_height, self.image_height, 3])
             bg = tf.slice(self.input_data, [0,0,0,3], [-1,self.image_height, self.image_height, 3])
+            gt = tf.expand_dims(tf.cast(self.gt,tf.float32), 3)
             tf.summary.image("frame", frame, max_outputs=3)
             tf.summary.image("background", bg, max_outputs=3)
-            tf.summary.image("groundtruth", tf.cast(self.gt,tf.float32), max_outputs=3)
+            tf.summary.image("groundtruth", gt, max_outputs=3)
 
     def build_model(self):
         self.variables_collections = {'weights':['weights'], 'biases':['biases']}
