@@ -131,11 +131,11 @@ class bgsCNN_v5:
         # conv, output shape: 320X320X2
         conv = slim.conv2d(unpool_5, 64, [3,3], scope='conv1', biases_initializer=None,
             weights_initializer=initializers.xavier_initializer(uniform=False),
-            activation_fn=None, variables_collections=self.variables_collections)
+            variables_collections=self.variables_collections)
         conv = slim.dropout(conv, keep_prob=0.8, is_training=self.is_training, scope='dropout1')
         conv = slim.conv2d(conv, 2, [3, 3], scope='conv2', biases_initializer=None,
             weights_initializer=initializers.xavier_initializer(uniform=False),
-            activation_fn=None, variables_collections=self.variables_collections)
+            variables_collections=self.variables_collections)
         conv = slim.dropout(conv, keep_prob=0.8, is_training=self.is_training, scope='dropout2')
         conv_1 = tf.slice(conv, [0,0,0,0], [-1,self.image_height, self.image_height, 1])
         conv_2 = tf.slice(conv, [0,0,0,1], [-1,self.image_height, self.image_height, 1])
