@@ -4,8 +4,8 @@ You can find the details about my model in the following two reports:
 2. [Background Subtraction Using Deep Learning--Part II](https://saoyan.github.io/DL-background-subtraction-2/)  
 
 A poster is also available. (The poster is only based on experiment results of v1~v3)  
-[JPG version](https://saoyan.github.io/assets/images/bgsCNN_2/poster.jpg)  
-[PDF version](https://saoyan.github.io/assets/poster.pdf)
+[JPG version](https://saoyan.github.io/assets/Mitacs_Internship_Poster.jpg)  
+[PDF version](https://saoyan.github.io/assets/Mitacs_Internship_Poster.pdf)
 
 ## Contents of this repository
 * generate_bg.py  
