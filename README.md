@@ -29,8 +29,8 @@ A poster is also available. (The poster is only based on experiment results of v
 ### 2. Training
 ***
 **NOTE**  
-If you use bgsCNN_v1~v2, set the image_height & image_width as multiples of 32 plus 1, e.g. 321.  
-If you use bgsCNN_v4~v5, set the image_height & image_width as multiples of 32, e.g. 320.
+If you use bgsCNN_v1, v2 or v3, set the image_height & image_width as multiples of 32 plus 1, e.g. 321.  
+If you use bgsCNN_v4 or v5, set the image_height & image_width as multiples of 32, e.g. 320.
 ***
 In the following demos, suppose we use bgsCNN_v2.
 * If you want to run both generate_bg.py and prepare_data.py (trust me, you don't want to run generate_bg.py yourself!):
