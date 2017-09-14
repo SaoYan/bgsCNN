@@ -31,12 +31,13 @@ class bgsCNN_v5:
     def build_inputs(self):
         with tf.name_scope("input_data"):
             self.input_data = tf.placeholder(tf.float32, [None, self.image_height, self.image_height, 6])
-            self.gt = tf.placeholder(tf.int32, [None, self.image_height, self.image_height])
+            self.gt = tf.placeholder(tf.int32, [None, self.image_height, self.image_height, 1])
             self.learning_rate = tf.placeholder(tf.float32, [])
+            self.batch_size = tf.placeholder(tf.int32, []) # not used
             self.is_training = tf.placeholder(tf.bool, [])
             frame = tf.slice(self.input_data, [0,0,0,0], [-1,self.image_height, self.image_height, 3])
             bg = tf.slice(self.input_data, [0,0,0,3], [-1,self.image_height, self.image_height, 3])
-            gt = tf.expand_dims(tf.cast(self.gt,tf.float32), 3)
+            gt = tf.cast(self.gt,tf.float32)
             tf.summary.image("frame", frame, max_outputs=3)
             tf.summary.image("background", bg, max_outputs=3)
             tf.summary.image("groundtruth", gt, max_outputs=3)
@@ -144,8 +145,8 @@ class bgsCNN_v5:
         # final result
         with tf.name_scope("result"):
             output = tf.nn.softmax(conv)
-            pred = tf.expand_dims(tf.argmax(output, axis=3), axis=3)
-            result = tf.cast(pred, tf.uint8)
+            output = tf.expand_dims(tf.argmax(output, axis=3, output_type=tf.int32), axis=3)
+            result = tf.cast(output, tf.uint8)
             tf.summary.image("segmentation", result, max_outputs=3)
         self.logits = conv
         self.output = output
@@ -159,7 +160,7 @@ class bgsCNN_v5:
     def build_loss(self):
         with tf.name_scope("evaluation"):
             self.cross_entropy = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(
-                    labels = self.gt, logits = self.logits))
+                    labels = tf.squeeze(self.gt,axis=3), logits = self.logits))
             tf.summary.scalar("loss", self.cross_entropy)
 
     def build_optimizer(self):

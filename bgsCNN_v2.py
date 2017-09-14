@@ -32,6 +32,7 @@ class bgsCNN_v2:
             self.gt = tf.placeholder(tf.float32, [None, self.image_height, self.image_height, 1])
             self.learning_rate = tf.placeholder(tf.float32, [])
             self.batch_size = tf.placeholder(tf.int32, [])
+            self.is_training = tf.placeholder(tf.bool, []) # not used
             frame = tf.slice(self.input_data, [0,0,0,0], [-1,self.image_height, self.image_height, 3])
             bg = tf.slice(self.input_data, [0,0,0,3], [-1,self.image_height, self.image_height, 3])
             tf.summary.image("frame", frame, max_outputs=3)

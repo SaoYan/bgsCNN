@@ -9,6 +9,7 @@ from bgsCNN_v1 import bgsCNN_v1
 from bgsCNN_v2 import bgsCNN_v2
 from bgsCNN_v3 import bgsCNN_v3
 from bgsCNN_v4 import bgsCNN_v4
+from bgsCNN_v5 import bgsCNN_v5
 
 FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_integer("image_height", 321, "height of inputs")
@@ -38,6 +39,10 @@ def main(_):
         model = bgsCNN_v3(image_height=FLAGS.image_height, image_width=FLAGS.image_width)
     elif FLAGS.model_version == 4:
         model = bgsCNN_v4(image_height=FLAGS.image_height, image_width=FLAGS.image_width)
+    elif FLAGS.model_version == 5:
+        model = bgsCNN_v5(image_height=FLAGS.image_height, image_width=FLAGS.image_width)
+    else:
+        print("The model version is not supported. Please choose from 1 to 5")
     # generate results for the whole dataset
     cv2.namedWindow("frame")
     cv2.namedWindow("foreground mask")
@@ -84,14 +89,17 @@ def main(_):
                                     data_cube = np.uint8(np.concatenate([frame, bg_model], 2))
                                     data_cube = np.expand_dims(data_cube, axis=0)
                                     # feed forward the CNN
-                                    CNN_out = sess.run(model.output, {model.input_data:data_cube})
+                                    CNN_out = sess.run(model.output, {model.input_data:data_cube, model.batch_size:1, model.is_training:False})
                                     CNN_out = np.squeeze(CNN_out, axis=0)
-                                    CNN_out = cv2.medianBlur(CNN_out, 3)
-                                    result = np.zeros(CNN_out.shape, dtype=np.uint8)
-                                    result[CNN_out >= 0.5] = 255
-                                    result = cv2.resize(result, (original_size[1], original_size[0]))
-                                    result[result>=10] = 255
-                                    result[result<10] = 0
+                                    if FLAGS.model_version == 5:
+                                        result = CNN_out.astype(np.uint8)
+                                    else:
+                                        CNN_out = cv2.medianBlur(CNN_out, 3)
+                                        result = np.zeros(CNN_out.shape, dtype=np.uint8)
+                                        result[CNN_out >= 0.5] = 255
+                                        result = cv2.resize(result, (original_size[1], original_size[0]))
+                                        result[result>=10] = 255
+                                        result[result<10] = 0
                                     # record the result
                                     result_file = result_dir + "/" + num2filename(num, "bin") + ".png"
                                     cv2.imwrite(result_file, result)

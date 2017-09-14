@@ -7,6 +7,7 @@ from bgsCNN_v1 import bgsCNN_v1
 from bgsCNN_v2 import bgsCNN_v2
 from bgsCNN_v3 import bgsCNN_v3
 from bgsCNN_v4 import bgsCNN_v4
+from bgsCNN_v5 import bgsCNN_v5
 
 FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_integer("image_height", 321, "height of inputs")
@@ -36,6 +37,10 @@ def main(_):
         model = bgsCNN_v3(image_height=FLAGS.image_height, image_width=FLAGS.image_width)
     elif FLAGS.model_version == 4:
         model = bgsCNN_v4(image_height=FLAGS.image_height, image_width=FLAGS.image_width)
+    elif FLAGS.model_version == 5:
+        model = bgsCNN_v5(image_height=FLAGS.image_height, image_width=FLAGS.image_width)
+    else:
+        print("The model version is not supported. Please choose from 1 to 5")
     # run on the video
     bgs = libbgs.SuBSENSE()
     saver = tf.train.Saver()
@@ -66,15 +71,18 @@ def main(_):
             input_max = np.amax(input_cast)
             input_norm = (input_cast - input_min) / (input_max - input_min)
             # feed forward through CNN
-            output_img = sess.run(model.output, {model.input_data:input_norm, model.batch_size:1})
+            output_img = sess.run(model.output, {model.input_data:input_norm, model.batch_size:1, model.is_training:False})
             output_img = np.squeeze(output_img, axis=0)
             # post processing to get the final foregrond mask
-            output_img = cv2.medianBlur(output_img, ksize = 3)
-            mask = np.zeros(output_img.shape, dtype = np.uint8)
-            mask[output_img >= 0.5] = 255
-            mask = cv2.resize(mask, (frame_shape[1], frame_shape[0]))
-            mask[mask>=10] = 255
-            mask[mask<10] = 0
+            if FLAGS.model_version == 5:
+                mask = output_img.astype(np.uint8)
+            else:
+                output_img = cv2.medianBlur(output_img, ksize = 3)
+                mask = np.zeros(output_img.shape, dtype = np.uint8)
+                mask[output_img >= 0.5] = 255
+                mask = cv2.resize(mask, (frame_shape[1], frame_shape[0]))
+                mask[mask>=10] = 255
+                mask[mask<10] = 0
             # show results
             cv2.namedWindow("frame"); cv2.imshow("frame",frame_store)
             cv2.namedWindow("mask"); cv2.imshow("mask",mask)

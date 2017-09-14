@@ -120,7 +120,6 @@ def build_img_pair(img_batch, mode=None):
     gt_norm = (gt_cast - gt_min) / (gt_max - gt_min)
     if mode == 'softmax':
         gt_norm = gt_norm.astype(np.int32)
-        gt_norm = np.squeeze(gt_norm,3)
     return input_norm, gt_norm
 
 def walklevel(some_dir, level):

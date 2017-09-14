@@ -6,6 +6,7 @@ from bgsCNN_v1 import bgsCNN_v1
 from bgsCNN_v2 import bgsCNN_v2
 from bgsCNN_v3 import bgsCNN_v3
 from bgsCNN_v4 import bgsCNN_v4
+from bgsCNN_v5 import bgsCNN_v5
 
 FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_integer("batch_size", 10, "size of training batch")
@@ -37,6 +38,10 @@ def main(_):
         model = bgsCNN_v3(image_height=FLAGS.image_height, image_width=FLAGS.image_width)
     elif FLAGS.model_version == 4:
         model = bgsCNN_v4(image_height=FLAGS.image_height, image_width=FLAGS.image_width)
+    elif FLAGS.model_version == 5:
+        model = bgsCNN_v5(image_height=FLAGS.image_height, image_width=FLAGS.image_width)
+    else:
+        print("The model version is not supported. Please choose from 1 to 5")
     # test on the whole test set
     img_size = [FLAGS.image_height, FLAGS.image_width, FLAGS.image_depth]
     saver = tf.train.Saver()
@@ -53,9 +58,11 @@ def main(_):
         saver.restore(sess, FLAGS.log_dir + "/model.ckpt-" + str(FLAGS.optimal_step))
         for i in range(500):
             inputs_test, outputs_gt_test = build_img_pair(sess.run(test_batch))
-            summary_test = sess.run(model.summary, {model.input_data:inputs_test, model.gt:outputs_gt_test, model.batch_size:FLAGS.batch_size})
+            summary_test = sess.run(model.summary, {model.input_data:inputs_test, model.gt:outputs_gt_test,
+                                    model.batch_size:FLAGS.batch_size, model.is_training:False})
             test_writer.add_summary(summary_test, i)
-            l = model.cross_entropy.eval({model.input_data:inputs_test, model.gt:outputs_gt_test, model.batch_size:FLAGS.batch_size})
+            l = model.cross_entropy.eval({model.input_data:inputs_test, model.gt:outputs_gt_test,
+                                    model.batch_size:FLAGS.batch_size, model.is_training:False})
             loss = loss + l
             print("test loss %d: %f" % (i+1, l))
         print("average loss on test set: %f" % (loss/500.))
