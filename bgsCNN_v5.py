@@ -31,13 +31,13 @@ class bgsCNN_v5:
     def build_inputs(self):
         with tf.name_scope("input_data"):
             self.input_data = tf.placeholder(tf.float32, [None, self.image_height, self.image_height, 6])
-            self.gt = tf.placeholder(tf.int32, [None, self.image_height, self.image_height, 1])
+            self.gt = tf.placeholder(tf.float32, [None, self.image_height, self.image_height, 1])
             self.learning_rate = tf.placeholder(tf.float32, [])
             self.batch_size = tf.placeholder(tf.int32, []) # not used
             self.is_training = tf.placeholder(tf.bool, [])
             frame = tf.slice(self.input_data, [0,0,0,0], [-1,self.image_height, self.image_height, 3])
             bg = tf.slice(self.input_data, [0,0,0,3], [-1,self.image_height, self.image_height, 3])
-            gt = tf.cast(self.gt,tf.float32)
+            gt = self.gt
             tf.summary.image("frame", frame, max_outputs=3)
             tf.summary.image("background", bg, max_outputs=3)
             tf.summary.image("groundtruth", gt, max_outputs=3)
@@ -160,7 +160,7 @@ class bgsCNN_v5:
     def build_loss(self):
         with tf.name_scope("evaluation"):
             self.cross_entropy = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(
-                    labels = tf.squeeze(self.gt,axis=3), logits = self.logits))
+                    labels = tf.cast(tf.squeeze(self.gt,axis=3),tf.int32), logits = self.logits))
             tf.summary.scalar("loss", self.cross_entropy)
 
     def build_optimizer(self):
@@ -193,9 +193,9 @@ class bgsCNN_v5:
             test_writer  = tf.summary.FileWriter(self.log_dir + "/test", sess.graph)
             coord = tf.train.Coordinator()
             threads = tf.train.start_queue_runners(sess=sess, coord=coord)
-            inputs_test, outputs_gt_test = build_img_pair(sess.run(test_batch), mode='softmax')
+            inputs_test, outputs_gt_test = build_img_pair(sess.run(test_batch))
             for iter in range(self.max_iteration):
-                inputs_train, outputs_gt_train = build_img_pair(sess.run(train_batch), mode='softmax')
+                inputs_train, outputs_gt_train = build_img_pair(sess.run(train_batch))
                 # train with dynamic learning rate
                 if iter <= 500:
                     self.train_step.run({self.input_data:inputs_train, self.gt:outputs_gt_train,
