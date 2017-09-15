@@ -75,7 +75,8 @@ def main(_):
             output_img = np.squeeze(output_img, axis=0)
             # post processing to get the final foregrond mask
             if FLAGS.model_version == 5:
-                mask = output_img.astype(np.uint8)
+                mask = cv2.resize(output_img, (frame_shape[1], frame_shape[0]))
+                mask = mask.astype(np.uint8)
             else:
                 output_img = cv2.medianBlur(output_img, ksize = 3)
                 mask = np.zeros(output_img.shape, dtype = np.uint8)
