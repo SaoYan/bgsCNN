@@ -20,7 +20,8 @@ A poster is also available. (The poster is only based on experiment results of v
 ## Contents of this repository
 * generate_bg.py  
   generating background images; very time consuming to run  
-  You can get the result from [here](https://drive.google.com/open?id=0BxTycO36H3VARFdRQkR1WHJYM0E). Extract this and you will get a directory containing the original dataset with the generated background images. You can directly use it and run prepare_data.py.
+  You can get the preprocessed dataset from [here](https://drive.google.com/open?id=0BxTycO36H3VARFdRQkR1WHJYM0E).(**If you have problem accessing Google Drive, please use this [alternative link](http://pan.baidu.com/s/1qYmcUC0)**) Extract this and you will get a directory containing the original dataset with the generated background images. You can directly use it and run prepare_data.py.  
+
 * prepare_data.py  
   constructing TFrecords files for preparation of training the model
 * bgsCNN_v*.py  
