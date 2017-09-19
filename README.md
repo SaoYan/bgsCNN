@@ -2,6 +2,13 @@
 
 [![DOI](https://zenodo.org/badge/96831496.svg)](https://zenodo.org/badge/latestdoi/96831496)
 
+***
+Recent Updates
+* 2017/9/18: add V6 (***not tested, be careful to use***)  
+1. add skip connections on the basis of V4
+2. reduce the two conv-layers in the end to one conv-layer, and eliminate dropout.
+***
+
 You can find the details about my model in the following two reports:  
 1. [Background Subtraction Using Deep Learning--Part I](https://saoyan.github.io/DL-background-subtraction-1/)
 2. [Background Subtraction Using Deep Learning--Part II](https://saoyan.github.io/DL-background-subtraction-2/)  
