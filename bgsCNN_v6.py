@@ -54,12 +54,38 @@ class bgsCNN_v6:
             net, argmax, features = vgg_16(
                 pre_conv,
                 variables_collections = self.variables_collections)
-        tf.summary.image("channel1", tf.slice(pool5, [0,0,0,0],[-1,10,10,1]), max_outputs=3, family="vgg_16")
-        tf.summary.image("channel2", tf.slice(pool5, [0,0,0,1],[-1,10,10,1]), max_outputs=3, family="vgg_16")
-        tf.summary.image("channel3", tf.slice(pool5, [0,0,0,2],[-1,10,10,1]), max_outputs=3, family="vgg_16")
-        tf.summary.image("channel4", tf.slice(pool5, [0,0,0,3],[-1,10,10,1]), max_outputs=3, family="vgg_16")
+        # display conv1
+        tf.summary.image("channel1", tf.slice(features[0], [0,0,0,0],[-1,320,320,1]), max_outputs=3, family="conv1")
+        tf.summary.image("channel2", tf.slice(features[0], [0,0,0,1],[-1,320,320,1]), max_outputs=3, family="conv1")
+        tf.summary.image("channel3", tf.slice(features[0], [0,0,0,2],[-1,320,320,1]), max_outputs=3, family="conv1")
+        tf.summary.image("channel4", tf.slice(features[0], [0,0,0,3],[-1,320,320,1]), max_outputs=3, family="conv1")
+        # display conv2
+        tf.summary.image("channel1", tf.slice(features[1], [0,0,0,0],[-1,160,160,1]), max_outputs=3, family="conv2")
+        tf.summary.image("channel2", tf.slice(features[1], [0,0,0,1],[-1,160,160,1]), max_outputs=3, family="conv2")
+        tf.summary.image("channel3", tf.slice(features[1], [0,0,0,2],[-1,160,160,1]), max_outputs=3, family="conv2")
+        tf.summary.image("channel4", tf.slice(features[1], [0,0,0,3],[-1,160,160,1]), max_outputs=3, family="conv2")
+        # display conv3
+        tf.summary.image("channel1", tf.slice(features[2], [0,0,0,0],[-1,80,80,1]), max_outputs=3, family="conv3")
+        tf.summary.image("channel2", tf.slice(features[2], [0,0,0,1],[-1,80,80,1]), max_outputs=3, family="conv3")
+        tf.summary.image("channel3", tf.slice(features[2], [0,0,0,2],[-1,80,80,1]), max_outputs=3, family="conv3")
+        tf.summary.image("channel4", tf.slice(features[2], [0,0,0,3],[-1,80,80,1]), max_outputs=3, family="conv3")
+        # display conv4
+        tf.summary.image("channel1", tf.slice(features[3], [0,0,0,0],[-1,40,40,1]), max_outputs=3, family="conv4")
+        tf.summary.image("channel2", tf.slice(features[3], [0,0,0,1],[-1,40,40,1]), max_outputs=3, family="conv4")
+        tf.summary.image("channel3", tf.slice(features[3], [0,0,0,2],[-1,40,40,1]), max_outputs=3, family="conv4")
+        tf.summary.image("channel4", tf.slice(features[3], [0,0,0,3],[-1,40,40,1]), max_outputs=3, family="conv4")
+        # display conv5
+        tf.summary.image("channel1", tf.slice(features[4], [0,0,0,0],[-1,20,20,1]), max_outputs=3, family="conv5")
+        tf.summary.image("channel2", tf.slice(features[4], [0,0,0,1],[-1,20,20,1]), max_outputs=3, family="conv5")
+        tf.summary.image("channel3", tf.slice(features[4], [0,0,0,2],[-1,20,20,1]), max_outputs=3, family="conv5")
+        tf.summary.image("channel4", tf.slice(features[4], [0,0,0,3],[-1,20,20,1]), max_outputs=3, family="conv5")
+        # display pool5
+        tf.summary.image("channel1", tf.slice(net, [0,0,0,0],[-1,10,10,1]), max_outputs=3, family="vgg_16")
+        tf.summary.image("channel2", tf.slice(net, [0,0,0,1],[-1,10,10,1]), max_outputs=3, family="vgg_16")
+        tf.summary.image("channel3", tf.slice(net, [0,0,0,2],[-1,10,10,1]), max_outputs=3, family="vgg_16")
+        tf.summary.image("channel4", tf.slice(net, [0,0,0,3],[-1,10,10,1]), max_outputs=3, family="vgg_16")
         # deconv_1, output shape: 10X10X512
-        deconv_1 = slim.repeat(pool5, 3, slim.conv2d_transpose, 512, [3, 3], scope='deconv1',
+        deconv_1 = slim.repeat(net, 3, slim.conv2d_transpose, 512, [3, 3], scope='deconv1',
             weights_initializer=initializers.xavier_initializer(uniform=False), biases_initializer=None,
             activation_fn=None, variables_collections=self.variables_collections)
         tf.summary.image("channel1", tf.slice(deconv_1, [0,0,0,0],[-1,10,10,1]), max_outputs=3, family="deconv1")
