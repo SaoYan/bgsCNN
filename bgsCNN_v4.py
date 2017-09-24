@@ -52,7 +52,6 @@ class bgsCNN_v4:
         with slim.arg_scope(vgg.vgg_arg_scope()):
             net, argmax, __ = vgg_16(
                 pre_conv,
-                spatial_squeeze = False,
                 variables_collections = self.variables_collections)
         tf.summary.image("channel1", tf.slice(net, [0,0,0,0],[-1,10,10,1]), max_outputs=3, family="vgg_16")
         tf.summary.image("channel2", tf.slice(net, [0,0,0,1],[-1,10,10,1]), max_outputs=3, family="vgg_16")

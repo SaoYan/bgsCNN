@@ -26,7 +26,6 @@ def pool3d(x, ksize, strides, mode):
     return x_pool
 
 def vgg_16(inputs,
-           spatial_squeeze=True,
            variables_collections=None,
            scope='vgg_16',
            reuse=None):
@@ -35,33 +34,28 @@ def vgg_16(inputs,
     see original code in https://github.com/tensorflow/models/blob/master/slim/nets/vgg.py
     """
     with tf.variable_scope(scope, 'vgg_16', [inputs]) as sc:
-        end_points_collection = sc.name + '_end_points'
         # Collect outputs for conv2d, fully_connected and max_pool2d.
-        with slim.arg_scope([slim.conv2d, slim.fully_connected, slim.max_pool2d],
-                        outputs_collections=end_points_collection):
-            net = slim.repeat(inputs, 2, slim.conv2d, 64, [3, 3], scope='conv1', biases_initializer=None,
+        with slim.arg_scope([slim.conv2d, slim.fully_connected, slim.max_pool2d]):
+            conv1 = slim.repeat(inputs, 2, slim.conv2d, 64, [3, 3], scope='conv1', biases_initializer=None,
                             variables_collections=variables_collections, reuse=reuse)
-            net, argmax_1 = tf.nn.max_pool_with_argmax(net, [1,2,2,1], [1,2,2,1], padding='VALID', name='pool1')
-            net = slim.repeat(net, 2, slim.conv2d, 128, [3, 3], scope='conv2', biases_initializer=None,
+            pool1, argmax_1 = tf.nn.max_pool_with_argmax(conv1, [1,2,2,1], [1,2,2,1], padding='VALID', name='pool1')
+            conv2 = slim.repeat(pool1, 2, slim.conv2d, 128, [3, 3], scope='conv2', biases_initializer=None,
                             variables_collections=variables_collections, reuse=reuse)
-            net, argmax_2 = tf.nn.max_pool_with_argmax(net, [1,2,2,1], [1,2,2,1], padding='VALID', name='pool2')
-            net = slim.repeat(net, 3, slim.conv2d, 256, [3, 3], scope='conv3', biases_initializer=None,
+            pool2, argmax_2 = tf.nn.max_pool_with_argmax(conv2, [1,2,2,1], [1,2,2,1], padding='VALID', name='pool2')
+            conv3 = slim.repeat(pool2, 3, slim.conv2d, 256, [3, 3], scope='conv3', biases_initializer=None,
                             variables_collections=variables_collections, reuse=reuse)
-            net, argmax_3 = tf.nn.max_pool_with_argmax(net, [1,2,2,1], [1,2,2,1], padding='VALID', name='pool3')
-            net = slim.repeat(net, 3, slim.conv2d, 512, [3, 3], scope='conv4', biases_initializer=None,
+            pool3, argmax_3 = tf.nn.max_pool_with_argmax(conv3, [1,2,2,1], [1,2,2,1], padding='VALID', name='pool3')
+            conv4 = slim.repeat(pool3, 3, slim.conv2d, 512, [3, 3], scope='conv4', biases_initializer=None,
                             variables_collections=variables_collections, reuse=reuse)
-            net, argmax_4 = tf.nn.max_pool_with_argmax(net, [1,2,2,1], [1,2,2,1], padding='VALID', name='pool4')
-            net = slim.repeat(net, 3, slim.conv2d, 512, [3, 3], scope='conv5', biases_initializer=None,
+            pool4, argmax_4 = tf.nn.max_pool_with_argmax(conv4, [1,2,2,1], [1,2,2,1], padding='VALID', name='pool4')
+            conv5 = slim.repeat(pool4, 3, slim.conv2d, 512, [3, 3], scope='conv5', biases_initializer=None,
                             variables_collections=variables_collections, reuse=reuse)
-            net, argmax_5 = tf.nn.max_pool_with_argmax(net, [1,2,2,1], [1,2,2,1], padding='VALID', name='pool5')
-            # Convert end_points_collection into a end_point dict.
-            end_points = slim.utils.convert_collection_to_dict(end_points_collection)
-            if spatial_squeeze:
-                net = tf.squeeze(net, [1, 2], name='fc8/squeezed')
-                end_points[sc.name + '/fc8'] = net
+            pool5, argmax_5 = tf.nn.max_pool_with_argmax(conv5, [1,2,2,1], [1,2,2,1], padding='VALID', name='pool5')
             # return argmax
             argmax = (argmax_1, argmax_2, argmax_3, argmax_4, argmax_5)
-            return net, argmax, end_points
+            # return feature maps
+            features = (conv1, conv2, conv3, conv4, conv5)
+            return pool5, argmax, features
 
 def unpool(pool, ind, shape, ksize=[1, 2, 2, 1], scope=None):
     with tf.name_scope(scope):

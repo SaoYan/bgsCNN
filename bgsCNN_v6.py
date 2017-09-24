@@ -51,24 +51,9 @@ class bgsCNN_v6:
         tf.summary.image("pre_conv_out", pre_conv, max_outputs=3, family="pre_conv")
         # vgg_16, output shape: 10X10X512
         with slim.arg_scope(vgg.vgg_arg_scope()):
-            with tf.variable_scope('vgg_16'):
-                with slim.arg_scope([slim.conv2d, slim.fully_connected, slim.max_pool2d]):
-                    conv1 = slim.repeat(pre_conv, 2, slim.conv2d, 64, [3, 3], scope='conv1', biases_initializer=None,
-                                    variables_collections=self.variables_collections)
-                    pool1, argmax_1 = tf.nn.max_pool_with_argmax(conv1, [1,2,2,1], [1,2,2,1], padding='VALID', name='pool1')
-                    conv2 = slim.repeat(pool1, 2, slim.conv2d, 128, [3, 3], scope='conv2', biases_initializer=None,
-                                    variables_collections=self.variables_collections)
-                    pool2, argmax_2 = tf.nn.max_pool_with_argmax(conv2, [1,2,2,1], [1,2,2,1], padding='VALID', name='pool2')
-                    conv3 = slim.repeat(pool2, 3, slim.conv2d, 256, [3, 3], scope='conv3', biases_initializer=None,
-                                    variables_collections=self.variables_collections)
-                    pool3, argmax_3 = tf.nn.max_pool_with_argmax(conv3, [1,2,2,1], [1,2,2,1], padding='VALID', name='pool3')
-                    conv4 = slim.repeat(pool3, 3, slim.conv2d, 512, [3, 3], scope='conv4', biases_initializer=None,
-                                    variables_collections=self.variables_collections)
-                    pool4, argmax_4 = tf.nn.max_pool_with_argmax(conv4, [1,2,2,1], [1,2,2,1], padding='VALID', name='pool4')
-                    conv5 = slim.repeat(pool4, 3, slim.conv2d, 512, [3, 3], scope='conv5', biases_initializer=None,
-                                    variables_collections=self.variables_collections)
-                    pool5, argmax_5 = tf.nn.max_pool_with_argmax(conv5, [1,2,2,1], [1,2,2,1], padding='VALID', name='pool5')
-                    argmax = (argmax_1, argmax_2, argmax_3, argmax_4, argmax_5)
+            net, argmax, features = vgg_16(
+                pre_conv,
+                variables_collections = self.variables_collections)
         tf.summary.image("channel1", tf.slice(pool5, [0,0,0,0],[-1,10,10,1]), max_outputs=3, family="vgg_16")
         tf.summary.image("channel2", tf.slice(pool5, [0,0,0,1],[-1,10,10,1]), max_outputs=3, family="vgg_16")
         tf.summary.image("channel3", tf.slice(pool5, [0,0,0,2],[-1,10,10,1]), max_outputs=3, family="vgg_16")
@@ -83,7 +68,7 @@ class bgsCNN_v6:
         tf.summary.image("channel4", tf.slice(deconv_1, [0,0,0,3],[-1,10,10,1]), max_outputs=3, family="deconv1")
         # unpool_1, output shape: 20X20X512
         unpool_1 = unpool(deconv_1, argmax[4], shape=[-1,20,20,512], scope='unpool1')
-        unpool_1 = tf.add(unpool_1, conv5)
+        unpool_1 = tf.add(unpool_1, features[4])
         tf.summary.image("channel1", tf.slice(unpool_1, [0,0,0,0],[-1,20,20,1]), max_outputs=3, family="unpool1")
         tf.summary.image("channel2", tf.slice(unpool_1, [0,0,0,1],[-1,20,20,1]), max_outputs=3, family="unpool1")
         tf.summary.image("channel3", tf.slice(unpool_1, [0,0,0,2],[-1,20,20,1]), max_outputs=3, family="unpool1")
@@ -98,7 +83,7 @@ class bgsCNN_v6:
         tf.summary.image("channel4", tf.slice(deconv_2, [0,0,0,3],[-1,20,20,1]), max_outputs=3, family="deconv2")
         # unpool_2, output shape: 40X40X512
         unpool_2 = unpool(deconv_2, argmax[3], shape=[-1,40,40,512], scope='unpool2')
-        unpool_2 = tf.add(unpool_2, conv4)
+        unpool_2 = tf.add(unpool_2, features[3])
         tf.summary.image("channel1", tf.slice(unpool_2, [0,0,0,0],[-1,40,40,1]), max_outputs=3, family="unpool2")
         tf.summary.image("channel2", tf.slice(unpool_2, [0,0,0,1],[-1,40,40,1]), max_outputs=3, family="unpool2")
         tf.summary.image("channel3", tf.slice(unpool_2, [0,0,0,2],[-1,40,40,1]), max_outputs=3, family="unpool2")
@@ -113,7 +98,7 @@ class bgsCNN_v6:
         tf.summary.image("channel4", tf.slice(deconv_3, [0,0,0,3],[-1,40,40,1]), max_outputs=3, family="deconv3")
         # unpool_3, output shape: 80X80X256
         unpool_3 = unpool(deconv_3, argmax[2],shape=[-1,80,80,256], scope='unpool3')
-        unpool_3 = tf.add(unpool_3, conv3)
+        unpool_3 = tf.add(unpool_3, features[2])
         tf.summary.image("channel1", tf.slice(unpool_3, [0,0,0,0],[-1,80,80,1]), max_outputs=3, family="unpool3")
         tf.summary.image("channel2", tf.slice(unpool_3, [0,0,0,1],[-1,80,80,1]), max_outputs=3, family="unpool3")
         tf.summary.image("channel3", tf.slice(unpool_3, [0,0,0,2],[-1,80,80,1]), max_outputs=3, family="unpool3")
@@ -128,7 +113,7 @@ class bgsCNN_v6:
         tf.summary.image("channel4", tf.slice(deconv_4, [0,0,0,3],[-1,80,80,1]), max_outputs=3, family="deconv4")
         # unpool_4, output shape: 160X160X128
         unpool_4 = unpool(deconv_4, argmax[1], shape=[-1,160,160,128], scope='unpool4')
-        unpool_4 = tf.add(unpool_4, conv2)
+        unpool_4 = tf.add(unpool_4, features[1])
         tf.summary.image("channel1", tf.slice(unpool_4, [0,0,0,0],[-1,160,160,1]), max_outputs=3, family="unpool4")
         tf.summary.image("channel2", tf.slice(unpool_4, [0,0,0,1],[-1,160,160,1]), max_outputs=3, family="unpool4")
         tf.summary.image("channel3", tf.slice(unpool_4, [0,0,0,2],[-1,160,160,1]), max_outputs=3, family="unpool4")
@@ -143,7 +128,6 @@ class bgsCNN_v6:
         tf.summary.image("channel4", tf.slice(deconv_5, [0,0,0,3],[-1,160,160,1]), max_outputs=3, family="deconv5")
         # unpool_5, output shape: 320X320X64
         unpool_5 = unpool(deconv_5, argmax[0],shape=[-1,320,320,64], scope='unpool5')
-        unpool_5 = tf.add(unpool_5, conv1)
         tf.summary.image("channel1", tf.slice(unpool_5, [0,0,0,0],[-1,320,320,1]), max_outputs=3, family="unpool5")
         tf.summary.image("channel2", tf.slice(unpool_5, [0,0,0,1],[-1,320,320,1]), max_outputs=3, family="unpool5")
         tf.summary.image("channel3", tf.slice(unpool_5, [0,0,0,2],[-1,320,320,1]), max_outputs=3, family="unpool5")
