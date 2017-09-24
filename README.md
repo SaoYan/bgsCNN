@@ -34,7 +34,7 @@ A poster is also available. (The poster is only based on experiment results of v
 * [Tensorflow](https://github.com/tensorflow/tensorflow)
 * [OpenCV](https://github.com/opencv/opencv) ***compiled with Python support*** (you can refer to [this repository](https://github.com/SaoYan/OpenCV_SimpleDemos) for compiling OpenCV)
 * [bgslibrary](https://github.com/andrewssobral/bgslibrary) (needed only if you want to run generate_bg.py yourself)
-* Downloaded Checkpoint file of ResNet_V2_50 from [Tensorflow Model Zoo]https://github.com/tensorflow/models/tree/master/research/slim), and put resnet_v2_50.ckpt at the same directory as Python script files.
+* Downloaded Checkpoint file of ResNet_V2_50 from [Tensorflow Model Zoo](https://github.com/tensorflow/models/tree/master/research/slim), and put resnet_v2_50.ckpt at the same directory as Python script files.
 * Downloaded Checkpoint file of vgg_16 from [Tensorflow Model Zoo](https://github.com/tensorflow/models/tree/master/research/slim), and put vgg_16.ckpt at the same directory as Python script files.
 
 ### 2. Training
