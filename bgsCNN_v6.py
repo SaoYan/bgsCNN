@@ -139,7 +139,6 @@ class bgsCNN_v6:
         tf.summary.image("channel4", tf.slice(deconv_4, [0,0,0,3],[-1,80,80,1]), max_outputs=3, family="deconv4")
         # unpool_4, output shape: 160X160X128
         unpool_4 = unpool(deconv_4, argmax[1], shape=[-1,160,160,128], scope='unpool4')
-        unpool_4 = tf.add(unpool_4, features[1])
         tf.summary.image("channel1", tf.slice(unpool_4, [0,0,0,0],[-1,160,160,1]), max_outputs=3, family="unpool4")
         tf.summary.image("channel2", tf.slice(unpool_4, [0,0,0,1],[-1,160,160,1]), max_outputs=3, family="unpool4")
         tf.summary.image("channel3", tf.slice(unpool_4, [0,0,0,2],[-1,160,160,1]), max_outputs=3, family="unpool4")
@@ -162,7 +161,7 @@ class bgsCNN_v6:
         conv = slim.conv2d(unpool_5, 1, [3, 3], scope='conv', biases_initializer=None,
             weights_initializer=initializers.xavier_initializer(uniform=False),
             activation_fn=None, variables_collections=self.variables_collections)
-        # conv = slim.dropout(conv, keep_prob=0.8, is_training=self.is_training, scope='dropout2')
+        conv = slim.dropout(conv, keep_prob=0.8, is_training=self.is_training, scope='dropout2')
         tf.summary.image("conv", conv, max_outputs=3, family="conv")
         # final result
         with tf.name_scope("result"):
