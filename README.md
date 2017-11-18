@@ -8,7 +8,7 @@ Recent Updates
 [Background Subtraction Using Deep Learning--Part III](https://saoyan.github.io/DL-background-subtraction-3/)  
 ***
 
-You can find the details about my model in the following two reports:  
+You can find the details about my model in the following reports:  
 1. [Background Subtraction Using Deep Learning--Part I](https://saoyan.github.io/DL-background-subtraction-1/)
 2. [Background Subtraction Using Deep Learning--Part II](https://saoyan.github.io/DL-background-subtraction-2/)  
 3. [Background Subtraction Using Deep Learning--Part III](https://saoyan.github.io/DL-background-subtraction-3/)  
