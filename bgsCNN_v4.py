@@ -135,7 +135,6 @@ class bgsCNN_v4:
         conv = slim.conv2d(conv, 1, [3, 3], scope='conv2', biases_initializer=None,
             weights_initializer=initializers.xavier_initializer(uniform=False),
             activation_fn=None, variables_collections=self.variables_collections)
-        conv = slim.dropout(conv, keep_prob=0.8, is_training=self.is_training, scope='dropout2')
         tf.summary.image("conv", conv, max_outputs=3, family="conv")
         # final result
         with tf.name_scope("result"):
