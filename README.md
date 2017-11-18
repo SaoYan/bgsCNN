@@ -4,13 +4,14 @@
 
 ***
 Recent Updates
-* 2017/11/18: a new summary report is available, which describes v4 & v5
+2017/11/18: a new summary report is available, which describes v4 & v5  
+[Background Subtraction Using Deep Learning--Part III](https://saoyan.github.io/DL-background-subtraction-3/)  
 ***
 
 You can find the details about my model in the following two reports:  
 1. [Background Subtraction Using Deep Learning--Part I](https://saoyan.github.io/DL-background-subtraction-1/)
 2. [Background Subtraction Using Deep Learning--Part II](https://saoyan.github.io/DL-background-subtraction-2/)  
-3. [Background Subtraction Using Deep Learning--Part II](https://saoyan.github.io/DL-background-subtraction-3/)  
+3. [Background Subtraction Using Deep Learning--Part III](https://saoyan.github.io/DL-background-subtraction-3/)  
 
 A poster is also available. (The poster is only based on experiment results of v1~v3)  
 [JPG version](https://saoyan.github.io/assets/Mitacs_Internship_Poster.jpg)  
