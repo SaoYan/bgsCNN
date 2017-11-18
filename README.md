@@ -3,9 +3,10 @@
 [![DOI](https://zenodo.org/badge/96831496.svg)](https://zenodo.org/badge/latestdoi/96831496)
 
 ***
-Recent Updates
-2017/11/18: a new summary report is available, which describes v4 & v5  
+Recent Updates  
+* 2017/11/18: a new summary report is available, which describes v4 & v5  
 [Background Subtraction Using Deep Learning--Part III](https://saoyan.github.io/DL-background-subtraction-3/)  
+* I'm currently going on with the PyTorch version implementation. 
 ***
 
 You can find the details about my model in the following reports:  
