@@ -4,14 +4,13 @@
 
 ***
 Recent Updates
-* 2017/9/18: add V6 (***not tested, be careful to use***)  
-1. add skip connections on the basis of V4
-2. reduce the two conv-layers in the end to one conv-layer, and eliminate dropout.
+* 2017/11/18: a new summary report is available, which describes v4 & v5
 ***
 
 You can find the details about my model in the following two reports:  
 1. [Background Subtraction Using Deep Learning--Part I](https://saoyan.github.io/DL-background-subtraction-1/)
 2. [Background Subtraction Using Deep Learning--Part II](https://saoyan.github.io/DL-background-subtraction-2/)  
+3. [Background Subtraction Using Deep Learning--Part II](https://saoyan.github.io/DL-background-subtraction-3/)  
 
 A poster is also available. (The poster is only based on experiment results of v1~v3)  
 [JPG version](https://saoyan.github.io/assets/Mitacs_Internship_Poster.jpg)  
@@ -26,7 +25,7 @@ A poster is also available. (The poster is only based on experiment results of v
   constructing TFrecords files for preparation of training the model
 * bgsCNN_v*.py  
   training the model  
-  v1 ~ v3 respectively correspond to Model I ~ III mentioned in the second report; v4, v5 haven't been included in reports yet
+  v1 ~ v3 respectively correspond to Model I ~ III mentioned in the second report; ~~v4, v5 haven't been included in reports yet~~
 
 ## How to run
 
