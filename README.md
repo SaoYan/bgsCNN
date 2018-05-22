@@ -3,9 +3,8 @@
 [![DOI](https://zenodo.org/badge/96831496.svg)](https://zenodo.org/badge/latestdoi/96831496)
 
 ***
-Recent Updates  
-* 2017/11/18: a new summary report is available, which describes v4 & v5  
-[Background Subtraction Using Deep Learning--Part III](https://saoyan.github.io/DL-background-subtraction-3/)  
+<!-- Most Recent Updates  
+Some pre-trained models are released. -->
 ***
 
 You can find the details about my model in the following reports:  
@@ -16,6 +15,12 @@ You can find the details about my model in the following reports:
 A poster is also available. (The poster is only based on experiment results of v1~v3)  
 [JPG version](https://saoyan.github.io/assets/Mitacs_Internship_Poster.jpg)  
 [PDF version](https://saoyan.github.io/assets/Mitacs_Internship_Poster.pdf)
+
+<!-- ## Pre-trained models  
+Unfortunately, pre-trained models of v1 and v4 are missing :(  
+[Version 2]
+[Version 3]
+[Version 5] -->
 
 ## Contents of this repository
 * generate_bg.py  
