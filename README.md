@@ -1,6 +1,7 @@
 # Background Subtraction Using Deep Learning Method
 
 [![DOI](https://zenodo.org/badge/96831496.svg)](https://zenodo.org/badge/latestdoi/96831496)
+[![AUR](https://img.shields.io/aur/license/yaourt.svg?style=plastic)](LICENSE)
 
 ***
 Most Recent Updates  
