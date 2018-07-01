@@ -9,13 +9,13 @@ May 23, 2018: Some pre-trained models are released.
 ***
 
 You can find the details about my model in the following reports:  
-1. [Background Subtraction Using Deep Learning--Part I](https://saoyan.github.io/DL-background-subtraction-1/)
-2. [Background Subtraction Using Deep Learning--Part II](https://saoyan.github.io/DL-background-subtraction-2/)  
-3. [Background Subtraction Using Deep Learning--Part III](https://saoyan.github.io/DL-background-subtraction-3/)  
+1. [Background Subtraction Using Deep Learning--Part I](https://saoyan.github.io/posts/2017/07/27)
+2. [Background Subtraction Using Deep Learning--Part II](https://saoyan.github.io/posts/2017/08/07)  
+3. [Background Subtraction Using Deep Learning--Part III](https://saoyan.github.io/posts/2017/11/18)  
 
 A poster is also available. (The poster is only based on experiment results of v1~v3)  
-[JPG version](https://saoyan.github.io/assets/Mitacs_Internship_Poster.jpg)  
-[PDF version](https://saoyan.github.io/assets/Mitacs_Internship_Poster.pdf)
+[JPG version](https://saoyan.github.io/files/Mitacs_Internship_Poster.jpg)  
+[PDF version](https://saoyan.github.io/files/Mitacs_Internship_Poster.pdf)
 
 ## Pre-trained models  
 Unfortunately, pre-trained models of v1 and v4 are missing :(  
