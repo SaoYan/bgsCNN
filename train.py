@@ -5,7 +5,6 @@ from bgsCNN_v2 import bgsCNN_v2
 from bgsCNN_v3 import bgsCNN_v3
 from bgsCNN_v4 import bgsCNN_v4
 from bgsCNN_v5 import bgsCNN_v5
-from bgsCNN_v6 import bgsCNN_v6
 from generate_bg import generate_bg
 from prepare_data import prepare_data
 
